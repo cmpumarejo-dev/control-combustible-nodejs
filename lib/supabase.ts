@@ -49,3 +49,27 @@ export type EstacionServicio = {
   direccion?: string
   created_at: string
 }
+
+export type RegistroCalculado = {
+  id: number
+  vehiculo_id: number
+  placa: string
+  fecha: string
+  kilometraje_total: number
+  kilometraje_parcial: number
+  galones_recargados: number
+  valor_recarga: number
+  km_por_litro_computadora: number
+  tipo_recorrido: 'Urbano' | 'Carretera' | 'Mixto'
+  estacion: string
+  marca_estacion: string
+  // Campos calculados
+  km_recorridos: number | null
+  km_por_litro_real: number
+  km_por_galon_real: number
+  km_por_galon_computadora: number
+  costo_por_galon: number
+  costo_por_km: number
+  variacion_km: number
+  variacion_porcentaje: number
+}

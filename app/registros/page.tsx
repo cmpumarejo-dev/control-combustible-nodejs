@@ -1,0 +1,631 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import type { RegistroCalculado, Vehiculo, MarcaEstacion, EstacionServicio } from '@/lib/supabase'
+
+type Filtros = {
+  vehiculo_id: string
+  mes: string
+  anio: string
+  marca_estacion_id: string
+  estacion_servicio_id: string
+  tipo_recorrido: string
+  ordenar_por: string
+}
+
+export default function RegistrosPage() {
+  const [registros, setRegistros] = useState<RegistroCalculado[]>([])
+  const [registrosFiltrados, setRegistrosFiltrados] = useState<RegistroCalculado[]>([])
+  const [expandidos, setExpandidos] = useState<Set<number>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+
+  // Datos para los filtros
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
+  const [marcasEstacion, setMarcasEstacion] = useState<MarcaEstacion[]>([])
+  const [estaciones, setEstaciones] = useState<EstacionServicio[]>([])
+  const [estacionesFiltradas, setEstacionesFiltradas] = useState<EstacionServicio[]>([])
+
+  // Estado de filtros
+  const [filtros, setFiltros] = useState<Filtros>({
+    vehiculo_id: '',
+    mes: '',
+    anio: new Date().getFullYear().toString(),
+    marca_estacion_id: '',
+    estacion_servicio_id: '',
+    tipo_recorrido: '',
+    ordenar_por: 'fecha_desc'
+  })
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    cargarDatos()
+  }, [])
+
+  // Filtrar estaciones cuando cambia la marca
+  useEffect(() => {
+    if (filtros.marca_estacion_id) {
+      const filtradas = estaciones.filter(
+        e => e.marca_estacion_id === parseInt(filtros.marca_estacion_id)
+      )
+      setEstacionesFiltradas(filtradas)
+    } else {
+      setEstacionesFiltradas(estaciones)
+    }
+  }, [filtros.marca_estacion_id, estaciones])
+
+  // Aplicar filtros y ordenamiento
+  useEffect(() => {
+    aplicarFiltros()
+  }, [registros, filtros])
+
+  async function cargarDatos() {
+    try {
+      setLoading(true)
+
+      // Cargar registros desde la vista calculada
+      const { data: registrosData, error: registrosError } = await supabase
+        .from('vista_registros_combustible_calculados')
+        .select('*')
+        .order('fecha', { ascending: false })
+
+      if (registrosError) throw registrosError
+      setRegistros(registrosData || [])
+      setRegistrosFiltrados(registrosData || [])
+
+      // Cargar vehículos
+      const { data: vehiculosData, error: vehiculosError } = await supabase
+        .from('vehiculos')
+        .select('*')
+        .order('placa')
+
+      if (vehiculosError) throw vehiculosError
+      setVehiculos(vehiculosData || [])
+
+      // Cargar marcas de estación
+      const { data: marcasData, error: marcasError } = await supabase
+        .from('marcas_estacion')
+        .select('*')
+        .order('nombre')
+
+      if (marcasError) throw marcasError
+      setMarcasEstacion(marcasData || [])
+
+      // Cargar estaciones
+      const { data: estacionesData, error: estacionesError } = await supabase
+        .from('estaciones_servicio')
+        .select('*')
+        .order('nombre')
+
+      if (estacionesError) throw estacionesError
+      setEstaciones(estacionesData || [])
+      setEstacionesFiltradas(estacionesData || [])
+
+    } catch (error) {
+      console.error('Error cargando datos:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function aplicarFiltros() {
+    let resultados = [...registros]
+
+    // Filtro por vehículo
+    if (filtros.vehiculo_id) {
+      resultados = resultados.filter(r => r.vehiculo_id === parseInt(filtros.vehiculo_id))
+    }
+
+    // Filtro por mes y año
+    if (filtros.mes && filtros.anio) {
+      resultados = resultados.filter(r => {
+        const fecha = new Date(r.fecha)
+        return fecha.getMonth() + 1 === parseInt(filtros.mes) && 
+               fecha.getFullYear() === parseInt(filtros.anio)
+      })
+    } else if (filtros.anio) {
+      resultados = resultados.filter(r => {
+        const fecha = new Date(r.fecha)
+        return fecha.getFullYear() === parseInt(filtros.anio)
+      })
+    }
+
+    // Filtro por marca de estación
+    if (filtros.marca_estacion_id) {
+      resultados = resultados.filter(r => r.marca_estacion === marcasEstacion.find(m => m.id === parseInt(filtros.marca_estacion_id))?.nombre)
+    }
+
+    // Filtro por estación específica
+    if (filtros.estacion_servicio_id) {
+      resultados = resultados.filter(r => r.estacion === estacionesFiltradas.find(e => e.id === parseInt(filtros.estacion_servicio_id))?.nombre)
+    }
+
+    // Filtro por tipo de recorrido
+    if (filtros.tipo_recorrido) {
+      resultados = resultados.filter(r => r.tipo_recorrido === filtros.tipo_recorrido)
+    }
+
+    // Ordenamiento
+    switch (filtros.ordenar_por) {
+      case 'fecha_desc':
+        resultados.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+        break
+      case 'fecha_asc':
+        resultados.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+        break
+      case 'mejor_rendimiento':
+        resultados.sort((a, b) => b.km_por_galon_real - a.km_por_galon_real)
+        break
+      case 'peor_rendimiento':
+        resultados.sort((a, b) => a.km_por_galon_real - b.km_por_galon_real)
+        break
+      case 'mayor_costo':
+        resultados.sort((a, b) => b.valor_recarga - a.valor_recarga)
+        break
+      case 'menor_costo':
+        resultados.sort((a, b) => a.valor_recarga - b.valor_recarga)
+        break
+    }
+
+    setRegistrosFiltrados(resultados)
+  }
+
+  function handleFiltroChange(campo: keyof Filtros, valor: string) {
+    setFiltros(prev => ({
+      ...prev,
+      [campo]: valor,
+      // Reset estación si cambia la marca
+      ...(campo === 'marca_estacion_id' ? { estacion_servicio_id: '' } : {})
+    }))
+  }
+
+  function limpiarFiltros() {
+    setFiltros({
+      vehiculo_id: '',
+      mes: '',
+      anio: new Date().getFullYear().toString(),
+      marca_estacion_id: '',
+      estacion_servicio_id: '',
+      tipo_recorrido: '',
+      ordenar_por: 'fecha_desc'
+    })
+  }
+
+  function toggleExpanded(id: number) {
+    setExpandidos(prev => {
+      const nuevo = new Set(prev)
+      if (nuevo.has(id)) {
+        nuevo.delete(id)
+      } else {
+        nuevo.add(id)
+      }
+      return nuevo
+    })
+  }
+
+  function formatearFecha(fecha: string) {
+    return new Date(fecha).toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
+  function formatearNumero(numero: number, decimales: number = 1) {
+    return numero.toLocaleString('es-CO', {
+      minimumFractionDigits: decimales,
+      maximumFractionDigits: decimales
+    })
+  }
+
+  function formatearMoneda(valor: number) {
+    return valor.toLocaleString('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    })
+  }
+
+  // Calcular estadísticas de los registros filtrados
+  const estadisticas = {
+    total: registrosFiltrados.length,
+    promedioKmGalon: registrosFiltrados.length > 0
+      ? registrosFiltrados.reduce((sum, r) => sum + r.km_por_galon_real, 0) / registrosFiltrados.length
+      : 0,
+    totalGastado: registrosFiltrados.reduce((sum, r) => sum + r.valor_recarga, 0),
+    mejorRendimiento: registrosFiltrados.length > 0
+      ? Math.max(...registrosFiltrados.map(r => r.km_por_galon_real))
+      : 0,
+    peorRendimiento: registrosFiltrados.length > 0
+      ? Math.min(...registrosFiltrados.map(r => r.km_por_galon_real))
+      : 0
+  }
+
+  const meses = [
+    { value: '1', label: 'Enero' },
+    { value: '2', label: 'Febrero' },
+    { value: '3', label: 'Marzo' },
+    { value: '4', label: 'Abril' },
+    { value: '5', label: 'Mayo' },
+    { value: '6', label: 'Junio' },
+    { value: '7', label: 'Julio' },
+    { value: '8', label: 'Agosto' },
+    { value: '9', label: 'Septiembre' },
+    { value: '10', label: 'Octubre' },
+    { value: '11', label: 'Noviembre' },
+    { value: '12', label: 'Diciembre' }
+  ]
+
+  const anios = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i)
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-lg text-gray-600">Cargando registros...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900">Registros de Combustible</h1>
+        <button
+          onClick={() => window.location.href = '/registros/nuevo'}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          + Nuevo Registro
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <button
+          onClick={() => setMostrarFiltros(!mostrarFiltros)}
+          className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
+        >
+          <span className="text-lg font-semibold text-gray-900">
+            🔍 Filtros
+          </span>
+          <span className="text-gray-600">
+            {mostrarFiltros ? '▲' : '▼'}
+          </span>
+        </button>
+
+        {mostrarFiltros && (
+          <div className="px-6 pb-6 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              {/* Vehículo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Vehículo
+                </label>
+                <select
+                  value={filtros.vehiculo_id}
+                  onChange={(e) => handleFiltroChange('vehiculo_id', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos los vehículos</option>
+                  {vehiculos.map(v => (
+                    <option key={v.id} value={v.id}>
+                      {v.placa} - {v.marca} {v.linea}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Año */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Año
+                </label>
+                <select
+                  value={filtros.anio}
+                  onChange={(e) => handleFiltroChange('anio', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos</option>
+                  {anios.map(a => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Mes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mes
+                </label>
+                <select
+                  value={filtros.mes}
+                  onChange={(e) => handleFiltroChange('mes', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos</option>
+                  {meses.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Marca Estación */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Marca de Estación
+                </label>
+                <select
+                  value={filtros.marca_estacion_id}
+                  onChange={(e) => handleFiltroChange('marca_estacion_id', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todas las marcas</option>
+                  {marcasEstacion.map(m => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Estación */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Estación de Servicio
+                </label>
+                <select
+                  value={filtros.estacion_servicio_id}
+                  onChange={(e) => handleFiltroChange('estacion_servicio_id', e.target.value)}
+                  disabled={!filtros.marca_estacion_id && estacionesFiltradas.length === estaciones.length}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                >
+                  <option value="">Todas las estaciones</option>
+                  {estacionesFiltradas.map(e => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tipo de Recorrido */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de Recorrido
+                </label>
+                <select
+                  value={filtros.tipo_recorrido}
+                  onChange={(e) => handleFiltroChange('tipo_recorrido', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos</option>
+                  <option value="Urbano">Urbano</option>
+                  <option value="Carretera">Carretera</option>
+                  <option value="Mixto">Mixto</option>
+                </select>
+              </div>
+
+              {/* Ordenar por */}
+              <div className="md:col-span-2 lg:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ordenar por
+                </label>
+                <select
+                  value={filtros.ordenar_por}
+                  onChange={(e) => handleFiltroChange('ordenar_por', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="fecha_desc">Fecha (más reciente primero)</option>
+                  <option value="fecha_asc">Fecha (más antigua primero)</option>
+                  <option value="mejor_rendimiento">Mejor rendimiento</option>
+                  <option value="peor_rendimiento">Peor rendimiento</option>
+                  <option value="mayor_costo">Mayor costo</option>
+                  <option value="menor_costo">Menor costo</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-4">
+              <button
+                onClick={limpiarFiltros}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Estadísticas */}
+      {registrosFiltrados.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4">
+            📊 Estadísticas {registrosFiltrados.length !== registros.length && '(Filtradas)'}
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+              <div className="text-sm text-blue-700">Total registros</div>
+              <div className="text-2xl font-bold text-blue-900">{estadisticas.total}</div>
+            </div>
+            <div>
+              <div className="text-sm text-blue-700">Promedio km/gal</div>
+              <div className="text-2xl font-bold text-blue-900">
+                {formatearNumero(estadisticas.promedioKmGalon)}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-blue-700">Total gastado</div>
+              <div className="text-2xl font-bold text-blue-900">
+                {formatearMoneda(estadisticas.totalGastado)}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-blue-700">Mejor carga</div>
+              <div className="text-2xl font-bold text-green-700">
+                {formatearNumero(estadisticas.mejorRendimiento)} km/gal
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-blue-700">Peor carga</div>
+              <div className="text-2xl font-bold text-orange-700">
+                {formatearNumero(estadisticas.peorRendimiento)} km/gal
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tarjetas de Registros */}
+      {registrosFiltrados.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="text-gray-400 text-6xl mb-4">📝</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            No hay registros
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {registros.length === 0
+              ? 'Aún no has registrado ninguna carga de combustible.'
+              : 'No hay registros que coincidan con los filtros seleccionados.'}
+          </p>
+          {registros.length === 0 && (
+            <button
+              onClick={() => window.location.href = '/registros/nuevo'}
+              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
+            >
+              Crear primer registro
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {registrosFiltrados.map(registro => {
+            const isExpanded = expandidos.has(registro.id)
+            const tipoIcon = registro.tipo_recorrido === 'Urbano' ? '🏙️' :
+                            registro.tipo_recorrido === 'Carretera' ? '🛣️' : '🔀'
+            const variacionColor = registro.variacion_porcentaje > 0 ? 'text-green-600' :
+                                  registro.variacion_porcentaje < 0 ? 'text-red-600' : 'text-gray-600'
+            const variacionIcon = registro.variacion_porcentaje > 0 ? '📈' :
+                                 registro.variacion_porcentaje < 0 ? '📉' : '➡️'
+
+            return (
+              <div
+                key={registro.id}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              >
+                {/* Header - Siempre visible */}
+                <div
+                  onClick={() => toggleExpanded(registro.id)}
+                  className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">📅</span>
+                        <span className="font-semibold text-gray-900">
+                          {formatearFecha(registro.fecha)}
+                        </span>
+                        <span className="text-2xl">🚗</span>
+                        <span className="font-semibold text-blue-600">
+                          {registro.placa}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 space-x-3">
+                        <span>{formatearNumero(registro.kilometraje_parcial, 0)} km</span>
+                        <span>·</span>
+                        <span>{formatearNumero(registro.galones_recargados)} gal</span>
+                        <span>·</span>
+                        <span className="font-semibold text-gray-900">
+                          {formatearNumero(registro.km_por_galon_real)} km/gal
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        🏪 {registro.estacion} ({registro.marca_estacion})
+                      </div>
+                    </div>
+                    <button className="text-2xl text-gray-400 hover:text-gray-600 transition-colors">
+                      {isExpanded ? '▲' : '▼'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Detalles expandidos */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 border-t border-gray-200 bg-gray-50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                      {/* Costos */}
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <span>💰</span> COSTOS
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Valor recarga:</span>
+                            <span className="font-semibold">{formatearMoneda(registro.valor_recarga)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Costo por galón:</span>
+                            <span className="font-semibold">{formatearMoneda(registro.costo_por_galon)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Costo por km:</span>
+                            <span className="font-semibold">{formatearMoneda(registro.costo_por_km)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Rendimiento */}
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <span>📊</span> RENDIMIENTO
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Km/litro real:</span>
+                            <span className="font-semibold">{formatearNumero(registro.km_por_litro_real)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Km/litro compu:</span>
+                            <span className="font-semibold">{formatearNumero(registro.km_por_litro_computadora)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Variación:</span>
+                            <span className={`font-semibold ${variacionColor}`}>
+                              {variacionIcon} {formatearNumero(registro.variacion_porcentaje)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Detalles adicionales */}
+                      <div className="bg-white rounded-lg p-4 shadow-sm md:col-span-2">
+                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <span>📍</span> DETALLES
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Tipo recorrido:</span>
+                            <span className="font-semibold">{tipoIcon} {registro.tipo_recorrido}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Km total:</span>
+                            <span className="font-semibold">{formatearNumero(registro.kilometraje_total, 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Km parcial:</span>
+                            <span className="font-semibold">{formatearNumero(registro.kilometraje_parcial, 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Km/gal real:</span>
+                            <span className="font-semibold">{formatearNumero(registro.km_por_galon_real)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
