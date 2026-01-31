@@ -31,7 +31,7 @@ export default function RegistrosPage() {
   const [filtros, setFiltros] = useState<Filtros>({
     vehiculo_id: '',
     mes: '',
-    anio: new Date().getFullYear().toString(),
+    anio: '',
     marca_estacion_id: '',
     estacion_servicio_id: '',
     tipo_recorrido: '',
@@ -184,7 +184,7 @@ export default function RegistrosPage() {
     setFiltros({
       vehiculo_id: '',
       mes: '',
-      anio: new Date().getFullYear().toString(),
+      anio: '',
       marca_estacion_id: '',
       estacion_servicio_id: '',
       tipo_recorrido: '',
