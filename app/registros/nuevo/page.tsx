@@ -47,7 +47,7 @@ export default function NuevoRegistro() {
     } else {
       setEstacionesFiltradas([])
     }
-  }, [formData.marca_estacion_id, estaciones])
+  }, [formData.marca_estacion_id, formData.estacion_servicio_id, estaciones])
 
   async function cargarDatos() {
     try {
