@@ -287,7 +287,7 @@ export default function RegistrosPage() {
           className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
         >
           <span className="text-lg font-semibold text-gray-900">
-            🔍 Filtros
+            Filtros
           </span>
           <span className="text-gray-600">
             {mostrarFiltros ? '▲' : '▼'}
@@ -438,7 +438,7 @@ export default function RegistrosPage() {
       {registrosFiltrados.length > 0 && (
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
           <h3 className="text-lg font-semibold text-blue-900 mb-4">
-            📊 Estadísticas {registrosFiltrados.length !== registros.length && '(Filtradas)'}
+            Estadísticas {registrosFiltrados.length !== registros.length && '(Filtradas)'}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
@@ -460,13 +460,13 @@ export default function RegistrosPage() {
             <div>
               <div className="text-sm text-blue-700">Mejor carga</div>
               <div className="text-2xl font-bold text-green-700">
-                {formatearNumero(estadisticas.mejorRendimiento)} km/gal
+                {formatearNumero(estadisticas.mejorRendimiento)}
               </div>
             </div>
             <div>
               <div className="text-sm text-blue-700">Peor carga</div>
               <div className="text-2xl font-bold text-orange-700">
-                {formatearNumero(estadisticas.peorRendimiento)} km/gal
+                {formatearNumero(estadisticas.peorRendimiento)}
               </div>
             </div>
           </div>
@@ -476,7 +476,7 @@ export default function RegistrosPage() {
       {/* Tarjetas de Registros */}
       {registrosFiltrados.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <div className="text-gray-400 text-6xl mb-4">📝</div>
+          <div className="text-gray-300 text-6xl mb-4">📋</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             No hay registros
           </h3>
@@ -515,32 +515,58 @@ export default function RegistrosPage() {
                   onClick={() => toggleExpanded(registro.id)}
                   className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
+                      {/* Fecha y Vehículo */}
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl">📅</span>
                         <span className="font-semibold text-gray-900">
                           {formatearFecha(registro.fecha)}
                         </span>
-                        <span className="text-2xl">🚗</span>
+                        <span className="text-gray-400">•</span>
                         <span className="font-semibold text-blue-600">
                           {registro.placa}
                         </span>
-                      </div>
-                      <div className="text-sm text-gray-600 space-x-3">
-                        <span>{formatearNumero(registro.kilometraje_parcial, 0)} km</span>
-                        <span>·</span>
-                        <span>{formatearNumero(registro.galones_recargados)} gal</span>
-                        <span>·</span>
-                        <span className="font-semibold text-gray-900">
-                          {formatearNumero(registro.km_por_galon_real)} km/gal
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                          {tipoIcon} {registro.tipo_recorrido}
                         </span>
                       </div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        🏪 {registro.estacion} ({registro.marca_estacion})
+                      
+                      {/* Datos principales */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-2">
+                        <div>
+                          <div className="text-gray-500 text-xs">Distancia</div>
+                          <div className="font-semibold text-gray-900">
+                            {formatearNumero(registro.kilometraje_parcial, 0)} km
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 text-xs">Galones</div>
+                          <div className="font-semibold text-gray-900">
+                            {formatearNumero(registro.galones_recargados)} gal
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 text-xs">Rendimiento</div>
+                          <div className="font-semibold text-green-600">
+                            {formatearNumero(registro.km_por_galon_real)} km/gal
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 text-xs">Valor</div>
+                          <div className="font-semibold text-gray-900">
+                            {formatearMoneda(registro.valor_recarga)}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Estación */}
+                      <div className="text-sm text-gray-500">
+                        {registro.estacion} • {registro.marca_estacion}
                       </div>
                     </div>
-                    <button className="text-2xl text-gray-400 hover:text-gray-600 transition-colors">
+                    
+                    {/* Botón expandir */}
+                    <button className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
                       {isExpanded ? '▲' : '▼'}
                     </button>
                   </div>
@@ -552,8 +578,8 @@ export default function RegistrosPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                       {/* Costos */}
                       <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <span>💰</span> COSTOS
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                          Costos
                         </h4>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
@@ -573,22 +599,22 @@ export default function RegistrosPage() {
 
                       {/* Rendimiento */}
                       <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <span>📊</span> RENDIMIENTO
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                          Rendimiento
                         </h4>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Km/litro real:</span>
-                            <span className="font-semibold">{formatearNumero(registro.km_por_litro_real)}</span>
+                            <span className="text-gray-600">Km/galón real:</span>
+                            <span className="font-semibold">{formatearNumero(registro.km_por_galon_real)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Km/litro compu:</span>
-                            <span className="font-semibold">{formatearNumero(registro.km_por_litro_computadora)}</span>
+                            <span className="text-gray-600">Km/galón compu:</span>
+                            <span className="font-semibold">{formatearNumero(registro.km_por_galon_computadora)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Variación:</span>
                             <span className={`font-semibold ${variacionColor}`}>
-                              {variacionIcon} {formatearNumero(registro.variacion_porcentaje)}%
+                              {formatearNumero(registro.variacion_porcentaje)}% {variacionIcon}
                             </span>
                           </div>
                         </div>
@@ -596,28 +622,37 @@ export default function RegistrosPage() {
 
                       {/* Detalles adicionales */}
                       <div className="bg-white rounded-lg p-4 shadow-sm md:col-span-2">
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <span>📍</span> DETALLES
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                          Detalles adicionales
                         </h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Tipo recorrido:</span>
-                            <span className="font-semibold">{tipoIcon} {registro.tipo_recorrido}</span>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <div className="text-gray-600 text-xs mb-1">Kilometraje total</div>
+                            <div className="font-semibold">{formatearNumero(registro.kilometraje_total, 0)} km</div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Km total:</span>
-                            <span className="font-semibold">{formatearNumero(registro.kilometraje_total, 0)}</span>
+                          <div>
+                            <div className="text-gray-600 text-xs mb-1">Galones recargados</div>
+                            <div className="font-semibold">{formatearNumero(registro.galones_recargados)} gal</div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Km parcial:</span>
-                            <span className="font-semibold">{formatearNumero(registro.kilometraje_parcial, 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Km/gal real:</span>
-                            <span className="font-semibold">{formatearNumero(registro.km_por_galon_real)}</span>
+                          <div>
+                            <div className="text-gray-600 text-xs mb-1">Tipo de recorrido</div>
+                            <div className="font-semibold">{tipoIcon} {registro.tipo_recorrido}</div>
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Botón de Editar */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          window.location.href = `/registros/editar/${registro.id}`
+                        }}
+                        className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                      >
+                        ✏️ Editar Registro
+                      </button>
                     </div>
                   </div>
                 )}

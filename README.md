@@ -171,3 +171,11 @@ No olvides configurar las variables de entorno en Vercel.
 
 **Desarrollado como proyecto de aprendizaje**
 Stack: Next.js + TypeScript + Tailwind + Supabase
+
+## Upload a GitHub y publicación en Vercel (Se supone que automaticamnete Vercel lo detecta)
+
+git add .
+git commit -m "Fix: Corregir errores de ESLint para deploy en Vercel"
+git push
+
+
