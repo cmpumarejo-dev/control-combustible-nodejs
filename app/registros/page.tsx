@@ -20,6 +20,7 @@ export default function RegistrosPage() {
   const [expandidos, setExpandidos] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  const [eliminando, setEliminando] = useState<number | null>(null)
 
   // Datos para los filtros
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
@@ -190,6 +191,42 @@ export default function RegistrosPage() {
       tipo_recorrido: '',
       ordenar_por: 'fecha_desc'
     })
+  }
+
+  async function handleEliminar(id: number, fecha: string, placa: string) {
+    // Confirmación con detalles del registro
+    const confirmar = window.confirm(
+      `¿Estás seguro de eliminar este registro?\n\n` +
+      `Fecha: ${formatearFecha(fecha)}\n` +
+      `Vehículo: ${placa}\n\n` +
+      `Esta acción no se puede deshacer.`
+    )
+
+    if (!confirmar) return
+
+    try {
+      setEliminando(id)
+
+      const { error } = await supabase
+        .from('registros_combustible')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Actualizar la lista local sin recargar todo
+      setRegistros(prev => prev.filter(r => r.id !== id))
+      setRegistrosFiltrados(prev => prev.filter(r => r.id !== id))
+
+      // Mostrar mensaje temporal (opcional)
+      alert('Registro eliminado exitosamente')
+
+    } catch (error) {
+      console.error('Error al eliminar:', error)
+      alert('Error al eliminar el registro. Por favor intenta de nuevo.')
+    } finally {
+      setEliminando(null)
+    }
   }
 
   function toggleExpanded(id: number) {
@@ -654,17 +691,29 @@ export default function RegistrosPage() {
                       )}
                     </div>
 
-                    {/* Botón de Editar */}
+                    {/* Botones de Editar y Eliminar */}
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          window.location.href = `/registros/editar/${registro.id}`
-                        }}
-                        className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                      >
-                        ✏️ Editar Registro
-                      </button>
+                      <div className="flex flex-col md:flex-row gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.location.href = `/registros/editar/${registro.id}`
+                          }}
+                          className="flex-1 md:flex-initial px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEliminar(registro.id, registro.fecha, registro.placa)
+                          }}
+                          disabled={eliminando === registro.id}
+                          className="flex-1 md:flex-initial px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                          {eliminando === registro.id ? '🗑️ Eliminando...' : '🗑️ Eliminar'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
