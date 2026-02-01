@@ -640,6 +640,18 @@ export default function RegistrosPage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Notas / Comentarios */}
+                      {registro.notas && (
+                        <div className="bg-yellow-50 rounded-lg p-4 shadow-sm md:col-span-2 border border-yellow-200">
+                          <h4 className="font-semibold text-gray-900 mb-2 text-sm">
+                            📝 Notas
+                          </h4>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {registro.notas}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Botón de Editar */}

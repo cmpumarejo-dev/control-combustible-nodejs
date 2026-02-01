@@ -22,7 +22,8 @@ export default function NuevoRegistro() {
     km_por_litro_computadora: '',
     marca_estacion_id: '',
     estacion_servicio_id: '',
-    tipo_recorrido: 'Urbano' as 'Urbano' | 'Carretera' | 'Mixto'
+    tipo_recorrido: 'Urbano' as 'Urbano' | 'Carretera' | 'Mixto',
+    notas: ''
   })
 
   const [loading, setLoading] = useState(false)
@@ -47,7 +48,7 @@ export default function NuevoRegistro() {
     } else {
       setEstacionesFiltradas([])
     }
-  }, [formData.marca_estacion_id, formData.estacion_servicio_id, estaciones])
+  }, [formData.marca_estacion_id, estaciones])
 
   async function cargarDatos() {
     try {
@@ -115,7 +116,8 @@ export default function NuevoRegistro() {
         km_por_litro_computadora: parseFloat(formData.km_por_litro_computadora),
         marca_estacion_id: parseInt(formData.marca_estacion_id),
         estacion_servicio_id: parseInt(formData.estacion_servicio_id),
-        tipo_recorrido: formData.tipo_recorrido
+        tipo_recorrido: formData.tipo_recorrido,
+        notas: formData.notas || null
       }
 
       const { error } = await supabase
@@ -137,7 +139,8 @@ export default function NuevoRegistro() {
         km_por_litro_computadora: '',
         marca_estacion_id: '',
         estacion_servicio_id: '',
-        tipo_recorrido: 'Urbano'
+        tipo_recorrido: 'Urbano',
+        notas: ''
       })
 
     } catch (error: any) {
@@ -372,6 +375,25 @@ export default function NuevoRegistro() {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* Notas / Comentarios */}
+          <div>
+            <label htmlFor="notas" className="block text-sm font-medium text-gray-700 mb-1">
+              Notas / Comentarios (opcional)
+            </label>
+            <textarea
+              id="notas"
+              name="notas"
+              value={formData.notas}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Ej: Aire acondicionado encendido todo el trayecto, tráfico pesado, subidas pronunciadas..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Agrega cualquier observación relevante sobre este registro
+            </p>
           </div>
 
           {/* Botones */}

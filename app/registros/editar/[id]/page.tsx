@@ -27,7 +27,8 @@ export default function EditarRegistro() {
     km_por_litro_computadora: '',
     marca_estacion_id: '',
     estacion_servicio_id: '',
-    tipo_recorrido: 'Urbano' as 'Urbano' | 'Carretera' | 'Mixto'
+    tipo_recorrido: 'Urbano' as 'Urbano' | 'Carretera' | 'Mixto',
+    notas: ''
   })
 
   const [loading, setLoading] = useState(true)
@@ -106,7 +107,8 @@ export default function EditarRegistro() {
         km_por_litro_computadora: registroData.km_por_litro_computadora.toString(),
         marca_estacion_id: registroData.marca_estacion_id.toString(),
         estacion_servicio_id: registroData.estacion_servicio_id.toString(),
-        tipo_recorrido: registroData.tipo_recorrido
+        tipo_recorrido: registroData.tipo_recorrido,
+        notas: registroData.notas || ''
       })
 
     } catch (error) {
@@ -147,7 +149,8 @@ export default function EditarRegistro() {
         km_por_litro_computadora: parseFloat(formData.km_por_litro_computadora),
         marca_estacion_id: parseInt(formData.marca_estacion_id),
         estacion_servicio_id: parseInt(formData.estacion_servicio_id),
-        tipo_recorrido: formData.tipo_recorrido
+        tipo_recorrido: formData.tipo_recorrido,
+        notas: formData.notas || null
       }
 
       const { error } = await supabase
@@ -412,6 +415,25 @@ export default function EditarRegistro() {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* Notas / Comentarios */}
+          <div>
+            <label htmlFor="notas" className="block text-sm font-medium text-gray-700 mb-1">
+              Notas / Comentarios (opcional)
+            </label>
+            <textarea
+              id="notas"
+              name="notas"
+              value={formData.notas}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Ej: Aire acondicionado encendido todo el trayecto, tráfico pesado, subidas pronunciadas..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Agrega cualquier observación relevante sobre este registro
+            </p>
           </div>
 
           {/* Botones */}

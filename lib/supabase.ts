@@ -31,6 +31,7 @@ export type RegistroCombustible = {
   marca_estacion_id: number
   estacion_servicio_id: number
   tipo_recorrido: 'Urbano' | 'Carretera' | 'Mixto'
+  notas?: string
   created_at?: string
 }
 
@@ -63,6 +64,7 @@ export type RegistroCalculado = {
   tipo_recorrido: 'Urbano' | 'Carretera' | 'Mixto'
   estacion: string
   marca_estacion: string
+  notas?: string
   // Campos calculados
   km_recorridos: number | null
   km_por_litro_real: number
