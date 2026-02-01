@@ -1,10 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Vehiculo, MarcaEstacion, EstacionServicio } from '@/lib/supabase'
 
 export default function NuevoRegistro() {
+  const searchParams = useSearchParams()
+  const vehiculoIdFromUrl = searchParams.get('vehiculo')
+
   // Estados para los selects
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [marcasEstacion, setMarcasEstacion] = useState<MarcaEstacion[]>([])
@@ -13,7 +17,7 @@ export default function NuevoRegistro() {
   
   // Estado del formulario
   const [formData, setFormData] = useState({
-    vehiculo_id: '',
+    vehiculo_id: vehiculoIdFromUrl || '',
     fecha: new Date().toISOString().split('T')[0],
     kilometraje_total: '',
     kilometraje_parcial: '',
@@ -157,9 +161,18 @@ export default function NuevoRegistro() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="bg-white shadow-md rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          Nuevo Registro de Combustible
-        </h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Nuevo Registro de Combustible
+          </h1>
+          {vehiculoIdFromUrl && (
+            <p className="text-sm text-gray-600 mt-2">
+              Para vehículo: <span className="font-semibold text-blue-600">
+                {vehiculos.find(v => v.id === parseInt(vehiculoIdFromUrl))?.placa || 'Cargando...'}
+              </span>
+            </p>
+          )}
+        </div>
 
         {mensaje && (
           <div className={`mb-4 p-4 rounded-md ${

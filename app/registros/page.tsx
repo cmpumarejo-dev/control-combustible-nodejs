@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { RegistroCalculado, Vehiculo, MarcaEstacion, EstacionServicio } from '@/lib/supabase'
 
@@ -15,6 +16,9 @@ type Filtros = {
 }
 
 export default function RegistrosPage() {
+  const searchParams = useSearchParams()
+  const vehiculoIdFromUrl = searchParams.get('vehiculo')
+  
   const [registros, setRegistros] = useState<RegistroCalculado[]>([])
   const [registrosFiltrados, setRegistrosFiltrados] = useState<RegistroCalculado[]>([])
   const [expandidos, setExpandidos] = useState<Set<number>>(new Set())
@@ -30,7 +34,7 @@ export default function RegistrosPage() {
 
   // Estado de filtros
   const [filtros, setFiltros] = useState<Filtros>({
-    vehiculo_id: '',
+    vehiculo_id: vehiculoIdFromUrl || '',
     mes: '',
     anio: '',
     marca_estacion_id: '',
@@ -43,6 +47,14 @@ export default function RegistrosPage() {
   useEffect(() => {
     cargarDatos()
   }, [])
+
+  // Aplicar filtro de vehículo desde URL cuando se cargan los datos
+  useEffect(() => {
+    if (vehiculoIdFromUrl && vehiculos.length > 0) {
+      setFiltros(prev => ({ ...prev, vehiculo_id: vehiculoIdFromUrl }))
+      setMostrarFiltros(true) // Mostrar filtros para que el usuario vea qué está filtrado
+    }
+  }, [vehiculoIdFromUrl, vehiculos])
 
   // Filtrar estaciones cuando cambia la marca
   useEffect(() => {
@@ -308,7 +320,23 @@ export default function RegistrosPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Registros de Combustible</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Registros de Combustible</h1>
+          {vehiculoIdFromUrl && (
+            <p className="text-sm text-gray-600 mt-1">
+              Filtrando por vehículo: <span className="font-semibold text-blue-600">
+                {vehiculos.find(v => v.id === parseInt(vehiculoIdFromUrl))?.placa || 'Cargando...'}
+              </span>
+              {' '}
+              <button
+                onClick={() => window.location.href = '/registros'}
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Ver todos
+              </button>
+            </p>
+          )}
+        </div>
         <button
           onClick={() => window.location.href = '/registros/nuevo'}
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
