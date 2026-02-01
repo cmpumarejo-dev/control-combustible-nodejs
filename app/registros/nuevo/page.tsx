@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Vehiculo, MarcaEstacion, EstacionServicio } from '@/lib/supabase'
 
-export default function NuevoRegistro() {
+function NuevoRegistroForm() {
   const searchParams = useSearchParams()
   const vehiculoIdFromUrl = searchParams.get('vehiculo')
 
@@ -429,5 +429,17 @@ export default function NuevoRegistro() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function NuevoRegistro() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-lg text-gray-600">Cargando formulario...</div>
+      </div>
+    }>
+      <NuevoRegistroForm />
+    </Suspense>
   )
 }
