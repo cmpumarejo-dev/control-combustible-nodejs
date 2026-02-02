@@ -370,7 +370,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.vehiculo_id}
                   onChange={(e) => handleFiltroChange('vehiculo_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos los vehículos</option>
                   {vehiculos.map(v => (
@@ -389,7 +389,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.anio}
                   onChange={(e) => handleFiltroChange('anio', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos</option>
                   {anios.map(a => (
@@ -406,7 +406,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.mes}
                   onChange={(e) => handleFiltroChange('mes', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos</option>
                   {meses.map(m => (
@@ -423,7 +423,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.marca_estacion_id}
                   onChange={(e) => handleFiltroChange('marca_estacion_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Todas las marcas</option>
                   {marcasEstacion.map(m => (
@@ -458,7 +458,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.tipo_recorrido}
                   onChange={(e) => handleFiltroChange('tipo_recorrido', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos</option>
                   <option value="Urbano">Urbano</option>
@@ -475,7 +475,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.ordenar_por}
                   onChange={(e) => handleFiltroChange('ordenar_por', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="fecha_desc">Fecha (más reciente primero)</option>
                   <option value="fecha_asc">Fecha (más antigua primero)</option>

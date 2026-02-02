@@ -1,490 +1,318 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import type { Vehiculo } from '@/lib/supabase'
 
-type EstadisticasVehiculo = {
-  vehiculo: Vehiculo
-  totalRegistros: number
-  urbano: { promedio: number, registros: number }
-  carretera: { promedio: number, registros: number }
-  mixto: { promedio: number, registros: number }
-  promedioGeneral: number
-  totalGastado: number
-  costoPorKm: number
-}
+export default function NuevoVehiculo() {
+  const router = useRouter()
 
-export default function VehiculosPage() {
-  const [vehiculos, setVehiculos] = useState<EstadisticasVehiculo[]>([])
-  const [expandidos, setExpandidos] = useState<Set<number>>(new Set())
-  const [loading, setLoading] = useState(true)
-  const [eliminando, setEliminando] = useState<number | null>(null)
-  const [cambiandoEstado, setCambiandoEstado] = useState<number | null>(null)
+  const [formData, setFormData] = useState({
+    placa: '',
+    marca: '',
+    linea: '',
+    modelo: new Date().getFullYear(),
+    combustible_tipo: 'Gasolina',
+    cilindrada_motor: '',
+    motorizacion_tipo_id: '1', // Térmico por defecto
+    activo: true
+  })
 
-  useEffect(() => {
-    cargarVehiculos()
-  }, [])
+  const [guardando, setGuardando] = useState(false)
+  const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error', texto: string } | null>(null)
 
-  async function cargarVehiculos() {
-    try {
-      setLoading(true)
-
-      // Cargar todos los vehículos
-      const { data: vehiculosData, error: vehiculosError } = await supabase
-        .from('vehiculos')
-        .select('*')
-        .order('placa')
-
-      if (vehiculosError) throw vehiculosError
-
-      // Cargar estadísticas para cada vehículo
-      const vehiculosConEstadisticas = await Promise.all(
-        (vehiculosData || []).map(async (vehiculo) => {
-          const { data: registros } = await supabase
-            .from('vista_registros_combustible_calculados')
-            .select('tipo_recorrido, km_por_galon_real, valor_recarga, kilometraje_parcial')
-            .eq('vehiculo_id', vehiculo.id)
-
-          if (!registros || registros.length === 0) {
-            return {
-              vehiculo,
-              totalRegistros: 0,
-              urbano: { promedio: 0, registros: 0 },
-              carretera: { promedio: 0, registros: 0 },
-              mixto: { promedio: 0, registros: 0 },
-              promedioGeneral: 0,
-              totalGastado: 0,
-              costoPorKm: 0
-            }
-          }
-
-          // Calcular estadísticas por tipo de recorrido
-          const urbano = registros.filter(r => r.tipo_recorrido === 'Urbano')
-          const carretera = registros.filter(r => r.tipo_recorrido === 'Carretera')
-          const mixto = registros.filter(r => r.tipo_recorrido === 'Mixto')
-
-          const promedioUrbano = urbano.length > 0
-            ? urbano.reduce((sum, r) => sum + r.km_por_galon_real, 0) / urbano.length
-            : 0
-
-          const promedioCarretera = carretera.length > 0
-            ? carretera.reduce((sum, r) => sum + r.km_por_galon_real, 0) / carretera.length
-            : 0
-
-          const promedioMixto = mixto.length > 0
-            ? mixto.reduce((sum, r) => sum + r.km_por_galon_real, 0) / mixto.length
-            : 0
-
-          const promedioGeneral = registros.reduce((sum, r) => sum + r.km_por_galon_real, 0) / registros.length
-          const totalGastado = registros.reduce((sum, r) => sum + r.valor_recarga, 0)
-          const totalKm = registros.reduce((sum, r) => sum + r.kilometraje_parcial, 0)
-          const costoPorKm = totalKm > 0 ? totalGastado / totalKm : 0
-
-          return {
-            vehiculo,
-            totalRegistros: registros.length,
-            urbano: { promedio: promedioUrbano, registros: urbano.length },
-            carretera: { promedio: promedioCarretera, registros: carretera.length },
-            mixto: { promedio: promedioMixto, registros: mixto.length },
-            promedioGeneral,
-            totalGastado,
-            costoPorKm
-          }
-        })
-      )
-
-      setVehiculos(vehiculosConEstadisticas)
-
-    } catch (error) {
-      console.error('Error cargando vehículos:', error)
-      alert('Error al cargar los vehículos')
-    } finally {
-      setLoading(false)
-    }
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    const { name, value, type } = e.target
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }))
   }
 
-  function toggleExpanded(id: number) {
-    setExpandidos(prev => {
-      const nuevo = new Set(prev)
-      if (nuevo.has(id)) {
-        nuevo.delete(id)
-      } else {
-        nuevo.add(id)
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setGuardando(true)
+    setMensaje(null)
+
+    try {
+      // Validar placa (formato simple)
+      if (formData.placa.trim().length < 3) {
+        throw new Error('La placa debe tener al menos 3 caracteres')
       }
-      return nuevo
-    })
-  }
 
-  async function handleCambiarEstado(vehiculo: Vehiculo) {
-    const accion = vehiculo.activo ? 'desactivar' : 'activar'
-    const confirmar = window.confirm(
-      `¿Estás seguro de ${accion} este vehículo?\n\n` +
-      `${vehiculo.placa} - ${vehiculo.marca} ${vehiculo.linea}\n\n` +
-      (vehiculo.activo 
-        ? 'Al desactivarlo, no aparecerá en los formularios de nuevos registros.'
-        : 'Al activarlo, volverá a aparecer en los formularios de nuevos registros.')
-    )
+      // Verificar si la placa ya existe
+      const { data: placaExistente } = await supabase
+        .from('vehiculos')
+        .select('id')
+        .eq('placa', formData.placa.trim().toUpperCase())
+        .single()
 
-    if (!confirmar) return
+      if (placaExistente) {
+        throw new Error('Ya existe un vehículo con esta placa')
+      }
 
-    try {
-      setCambiandoEstado(vehiculo.id)
+      const nuevoVehiculo = {
+        placa: formData.placa.trim().toUpperCase(),
+        marca: formData.marca.trim(),
+        linea: formData.linea.trim(),
+        modelo: parseInt(formData.modelo.toString()),
+        combustible_tipo: formData.combustible_tipo,
+        cilindrada_motor: parseFloat(formData.cilindrada_motor),
+        motorizacion_tipo_id: parseInt(formData.motorizacion_tipo_id),
+        activo: formData.activo
+      }
 
       const { error } = await supabase
         .from('vehiculos')
-        .update({ activo: !vehiculo.activo })
-        .eq('id', vehiculo.id)
+        .insert([nuevoVehiculo])
 
       if (error) throw error
 
-      // Actualizar localmente
-      setVehiculos(prev => prev.map(v => 
-        v.vehiculo.id === vehiculo.id 
-          ? { ...v, vehiculo: { ...v.vehiculo, activo: !v.vehiculo.activo } }
-          : v
-      ))
+      setMensaje({ tipo: 'success', texto: '¡Vehículo registrado exitosamente!' })
+      
+      setTimeout(() => {
+        router.push('/vehiculos')
+      }, 1500)
 
-    } catch (error) {
-      console.error('Error cambiando estado:', error)
-      alert('Error al cambiar el estado del vehículo')
+    } catch (error: any) {
+      console.error('Error al guardar:', error)
+      setMensaje({ 
+        tipo: 'error', 
+        texto: error.message || 'Error al registrar el vehículo. Por favor intenta de nuevo.' 
+      })
     } finally {
-      setCambiandoEstado(null)
+      setGuardando(false)
     }
   }
 
-  async function handleEliminar(vehiculo: Vehiculo, totalRegistros: number) {
-    if (totalRegistros > 0) {
-      alert(
-        `No se puede eliminar este vehículo porque tiene ${totalRegistros} registro(s) asociado(s).\n\n` +
-        `Primero debes eliminar todos los registros de combustible de este vehículo, ` +
-        `o puedes desactivarlo en lugar de eliminarlo.`
-      )
-      return
-    }
-
-    const confirmar = window.confirm(
-      `¿Estás ABSOLUTAMENTE seguro de eliminar este vehículo?\n\n` +
-      `${vehiculo.placa} - ${vehiculo.marca} ${vehiculo.linea} (${vehiculo.modelo})\n\n` +
-      `Esta acción NO se puede deshacer.\n\n` +
-      `Si solo quieres que no aparezca en los formularios, usa "Desactivar" en su lugar.`
-    )
-
-    if (!confirmar) return
-
-    try {
-      setEliminando(vehiculo.id)
-
-      const { error } = await supabase
-        .from('vehiculos')
-        .delete()
-        .eq('id', vehiculo.id)
-
-      if (error) throw error
-
-      // Actualizar localmente
-      setVehiculos(prev => prev.filter(v => v.vehiculo.id !== vehiculo.id))
-      alert('Vehículo eliminado exitosamente')
-
-    } catch (error) {
-      console.error('Error eliminando vehículo:', error)
-      alert('Error al eliminar el vehículo. Por favor intenta de nuevo.')
-    } finally {
-      setEliminando(null)
-    }
-  }
-
-  function formatearNumero(numero: number, decimales: number = 1) {
-    return numero.toLocaleString('es-CO', {
-      minimumFractionDigits: decimales,
-      maximumFractionDigits: decimales
-    })
-  }
-
-  function formatearMoneda(valor: number) {
-    return valor.toLocaleString('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    })
-  }
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-lg text-gray-600">Cargando vehículos...</div>
-      </div>
-    )
-  }
+  const anios = Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i)
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Mis Vehículos</h1>
-        <button
-          onClick={() => window.location.href = '/vehiculos/nuevo'}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          + Agregar Vehículo
-        </button>
-      </div>
-
-      {/* Resumen */}
-      {vehiculos.length > 0 && (
-        <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
-          <h3 className="text-lg font-semibold text-green-900 mb-2">
-            Resumen General
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <div className="text-sm text-green-700">Total vehículos</div>
-              <div className="text-2xl font-bold text-green-900">{vehiculos.length}</div>
-            </div>
-            <div>
-              <div className="text-sm text-green-700">Activos</div>
-              <div className="text-2xl font-bold text-green-900">
-                {vehiculos.filter(v => v.vehiculo.activo).length}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-green-700">Total registros</div>
-              <div className="text-2xl font-bold text-green-900">
-                {vehiculos.reduce((sum, v) => sum + v.totalRegistros, 0)}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-green-700">Gasto total</div>
-              <div className="text-2xl font-bold text-green-900">
-                {formatearMoneda(vehiculos.reduce((sum, v) => sum + v.totalGastado, 0))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Lista de Vehículos */}
-      {vehiculos.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <div className="text-gray-300 text-6xl mb-4">🚗</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No hay vehículos registrados
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Agrega tu primer vehículo para empezar a registrar consumos de combustible.
-          </p>
+    <div className="max-w-3xl mx-auto">
+      <div className="bg-white shadow-md rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Agregar Nuevo Vehículo
+          </h1>
           <button
-            onClick={() => window.location.href = '/vehiculos/nuevo'}
-            className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
+            onClick={() => router.push('/vehiculos')}
+            className="text-gray-600 hover:text-gray-900"
           >
-            Agregar primer vehículo
+            ← Volver
           </button>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {vehiculos.map(({ vehiculo, totalRegistros, urbano, carretera, mixto, promedioGeneral, totalGastado, costoPorKm }) => {
-            const isExpanded = expandidos.has(vehiculo.id)
-            
-            return (
-              <div
-                key={vehiculo.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                {/* Header - Siempre visible */}
-                <div
-                  onClick={() => toggleExpanded(vehiculo.id)}
-                  className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      {/* Placa y vehículo */}
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xl font-bold text-blue-600">
-                          {vehiculo.placa}
-                        </span>
-                        <span className="font-semibold text-gray-900">
-                          {vehiculo.marca} {vehiculo.linea} ({vehiculo.modelo})
-                        </span>
-                        {vehiculo.activo ? (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                            ✓ Activo
-                          </span>
-                        ) : (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                            ○ Inactivo
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Detalles técnicos */}
-                      <div className="text-sm text-gray-600 mb-2">
-                        {vehiculo.combustible_tipo} • {vehiculo.motorizacion_tipo_id === 1 ? 'Térmico' : vehiculo.motorizacion_tipo_id === 2 ? 'Eléctrico' : 'Híbrido'} • {vehiculo.cilindrada_motor} cc
-                      </div>
 
-                      {/* Resumen rápido */}
-                      <div className="text-sm text-gray-500">
-                        {totalRegistros} {totalRegistros === 1 ? 'registro' : 'registros'}
-                        {totalRegistros > 0 && ` • Promedio: ${formatearNumero(promedioGeneral)} km/gal`}
-                      </div>
-                    </div>
-                    
-                    {/* Botón expandir */}
-                    <button className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
-                      {isExpanded ? '▲' : '▼'}
-                    </button>
-                  </div>
-                </div>
+        {mensaje && (
+          <div className={`mb-4 p-4 rounded-md ${
+            mensaje.tipo === 'success' 
+              ? 'bg-green-50 text-green-800 border border-green-200' 
+              : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+            {mensaje.texto}
+          </div>
+        )}
 
-                {/* Detalles expandidos */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-gray-200 bg-gray-50">
-                    {totalRegistros > 0 ? (
-                      <div className="space-y-6 mt-4">
-                        {/* Rendimiento por tipo de recorrido */}
-                        <div className="bg-white rounded-lg p-4 shadow-sm">
-                          <h4 className="font-semibold text-gray-900 mb-4">
-                            Rendimiento por tipo de recorrido
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            {/* Urbano */}
-                            <div className="text-center p-3 bg-blue-50 rounded-lg">
-                              <div className="text-sm text-blue-700 mb-1">🏙️ Urbano</div>
-                              <div className="text-2xl font-bold text-blue-900">
-                                {urbano.registros > 0 ? formatearNumero(urbano.promedio) : '-'}
-                              </div>
-                              <div className="text-xs text-blue-600">
-                                {urbano.registros > 0 ? 'km/gal' : 'Sin datos'}
-                              </div>
-                              <div className="text-xs text-blue-500 mt-1">
-                                {urbano.registros} {urbano.registros === 1 ? 'registro' : 'registros'}
-                              </div>
-                            </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Placa */}
+          <div>
+            <label htmlFor="placa" className="block text-sm font-medium text-gray-700 mb-1">
+              Placa *
+            </label>
+            <input
+              type="text"
+              id="placa"
+              name="placa"
+              value={formData.placa}
+              onChange={handleChange}
+              required
+              placeholder="ABC123"
+              maxLength={10}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white uppercase"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              La placa se guardará en mayúsculas
+            </p>
+          </div>
 
-                            {/* Carretera */}
-                            <div className="text-center p-3 bg-green-50 rounded-lg">
-                              <div className="text-sm text-green-700 mb-1">🛣️ Carretera</div>
-                              <div className="text-2xl font-bold text-green-900">
-                                {carretera.registros > 0 ? formatearNumero(carretera.promedio) : '-'}
-                              </div>
-                              <div className="text-xs text-green-600">
-                                {carretera.registros > 0 ? 'km/gal' : 'Sin datos'}
-                              </div>
-                              <div className="text-xs text-green-500 mt-1">
-                                {carretera.registros} {carretera.registros === 1 ? 'registro' : 'registros'}
-                              </div>
-                            </div>
+          {/* Marca y Línea */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="marca" className="block text-sm font-medium text-gray-700 mb-1">
+                Marca *
+              </label>
+              <input
+                type="text"
+                id="marca"
+                name="marca"
+                value={formData.marca}
+                onChange={handleChange}
+                required
+                placeholder="Chevrolet"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              />
+            </div>
 
-                            {/* Mixto */}
-                            <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                              <div className="text-sm text-yellow-700 mb-1">🔀 Mixto</div>
-                              <div className="text-2xl font-bold text-yellow-900">
-                                {mixto.registros > 0 ? formatearNumero(mixto.promedio) : '-'}
-                              </div>
-                              <div className="text-xs text-yellow-600">
-                                {mixto.registros > 0 ? 'km/gal' : 'Sin datos'}
-                              </div>
-                              <div className="text-xs text-yellow-500 mt-1">
-                                {mixto.registros} {mixto.registros === 1 ? 'registro' : 'registros'}
-                              </div>
-                            </div>
+            <div>
+              <label htmlFor="linea" className="block text-sm font-medium text-gray-700 mb-1">
+                Línea / Modelo *
+              </label>
+              <input
+                type="text"
+                id="linea"
+                name="linea"
+                value={formData.linea}
+                onChange={handleChange}
+                required
+                placeholder="Swift Dzire"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              />
+            </div>
+          </div>
 
-                            {/* General */}
-                            <div className="text-center p-3 bg-purple-50 rounded-lg">
-                              <div className="text-sm text-purple-700 mb-1">📊 General</div>
-                              <div className="text-2xl font-bold text-purple-900">
-                                {formatearNumero(promedioGeneral)}
-                              </div>
-                              <div className="text-xs text-purple-600">km/gal</div>
-                              <div className="text-xs text-purple-500 mt-1">
-                                {totalRegistros} total
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+          {/* Año/Modelo */}
+          <div>
+            <label htmlFor="modelo" className="block text-sm font-medium text-gray-700 mb-1">
+              Año del Vehículo *
+            </label>
+            <select
+              id="modelo"
+              name="modelo"
+              value={formData.modelo}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+            >
+              {anios.map(anio => (
+                <option key={anio} value={anio}>{anio}</option>
+              ))}
+            </select>
+          </div>
 
-                        {/* Costos */}
-                        <div className="bg-white rounded-lg p-4 shadow-sm">
-                          <h4 className="font-semibold text-gray-900 mb-3">
-                            Costos
-                          </h4>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <div className="text-gray-600 text-xs mb-1">Total gastado</div>
-                              <div className="font-semibold text-lg">{formatearMoneda(totalGastado)}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-600 text-xs mb-1">Costo por km</div>
-                              <div className="font-semibold text-lg">{formatearMoneda(costoPorKm)}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">
-                          Este vehículo aún no tiene registros de combustible
-                        </p>
-                      </div>
-                    )}
+          {/* Tipo de Combustible */}
+          <div>
+            <label htmlFor="combustible_tipo" className="block text-sm font-medium text-gray-700 mb-1">
+              Tipo de Combustible *
+            </label>
+            <select
+              id="combustible_tipo"
+              name="combustible_tipo"
+              value={formData.combustible_tipo}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+            >
+              <option value="Gasolina">Gasolina</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Gas Natural">Gas Natural</option>
+              <option value="Eléctrico">Eléctrico</option>
+              <option value="Híbrido">Híbrido</option>
+            </select>
+          </div>
 
-                    {/* Botones de acción */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="flex flex-col md:flex-row gap-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            window.location.href = `/registros?vehiculo=${vehiculo.id}`
-                          }}
-                          className="flex-1 md:flex-initial px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
-                        >
-                          📋 Ver Registros
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            window.location.href = `/vehiculos/editar/${vehiculo.id}`
-                          }}
-                          className="flex-1 md:flex-initial px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                        >
-                          ✏️ Editar
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleCambiarEstado(vehiculo)
-                          }}
-                          disabled={cambiandoEstado === vehiculo.id}
-                          className={`flex-1 md:flex-initial px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed ${
-                            vehiculo.activo
-                              ? 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500'
-                              : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
-                          }`}
-                        >
-                          {cambiandoEstado === vehiculo.id
-                            ? '⏳ Procesando...'
-                            : vehiculo.activo
-                            ? '⏸️ Desactivar'
-                            : '▶️ Activar'}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEliminar(vehiculo, totalRegistros)
-                          }}
-                          disabled={eliminando === vehiculo.id}
-                          className="flex-1 md:flex-initial px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                        >
-                          {eliminando === vehiculo.id ? '🗑️ Eliminando...' : '🗑️ Eliminar'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+          {/* Cilindrada */}
+          <div>
+            <label htmlFor="cilindrada_motor" className="block text-sm font-medium text-gray-700 mb-1">
+              Cilindrada del Motor (cc) *
+            </label>
+            <input
+              type="number"
+              id="cilindrada_motor"
+              name="cilindrada_motor"
+              value={formData.cilindrada_motor}
+              onChange={handleChange}
+              required
+              min="0"
+              step="1"
+              placeholder="1200"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              En centímetros cúbicos (ej: 1200, 1600, 2000)
+            </p>
+          </div>
+
+          {/* Tipo de Motorización */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Motorización *
+            </label>
+            <div className="flex gap-6">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="motorizacion_tipo_id"
+                  value="1"
+                  checked={formData.motorizacion_tipo_id === '1'}
+                  onChange={handleChange}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Térmico</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="motorizacion_tipo_id"
+                  value="2"
+                  checked={formData.motorizacion_tipo_id === '2'}
+                  onChange={handleChange}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Eléctrico</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="motorizacion_tipo_id"
+                  value="3"
+                  checked={formData.motorizacion_tipo_id === '3'}
+                  onChange={handleChange}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Híbrido</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Estado Activo */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                name="activo"
+                checked={formData.activo}
+                onChange={handleChange}
+                className="mr-3 h-5 w-5"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-900">Vehículo activo</span>
+                <p className="text-xs text-gray-600 mt-1">
+                  Los vehículos activos aparecen en los formularios de registro de combustible
+                </p>
               </div>
-            )
-          })}
-        </div>
-      )}
+            </label>
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-4 pt-4">
+            <button
+              type="submit"
+              disabled={guardando}
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {guardando ? 'Guardando...' : 'Guardar Vehículo'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/vehiculos')}
+              disabled={guardando}
+              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

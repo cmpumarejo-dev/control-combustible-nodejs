@@ -184,7 +184,7 @@ export default function EditarVehiculo() {
               required
               placeholder="ABC123"
               maxLength={10}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white uppercase"
             />
             <p className="mt-1 text-xs text-gray-500">
               La placa se guardará en mayúsculas
@@ -205,7 +205,7 @@ export default function EditarVehiculo() {
                 onChange={handleChange}
                 required
                 placeholder="Chevrolet"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               />
             </div>
 
@@ -221,7 +221,7 @@ export default function EditarVehiculo() {
                 onChange={handleChange}
                 required
                 placeholder="Swift Dzire"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function EditarVehiculo() {
               value={formData.modelo}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             >
               {anios.map(anio => (
                 <option key={anio} value={anio}>{anio}</option>
@@ -256,7 +256,7 @@ export default function EditarVehiculo() {
               value={formData.combustible_tipo}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             >
               <option value="Gasolina">Gasolina</option>
               <option value="Diesel">Diesel</option>
@@ -281,7 +281,7 @@ export default function EditarVehiculo() {
               min="0"
               step="1"
               placeholder="1200"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             />
             <p className="mt-1 text-xs text-gray-500">
               En centímetros cúbicos (ej: 1200, 1600, 2000)

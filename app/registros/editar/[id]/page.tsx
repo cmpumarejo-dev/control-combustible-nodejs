@@ -119,7 +119,7 @@ export default function EditarRegistro() {
     }
   }
 
- function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -223,7 +223,7 @@ export default function EditarRegistro() {
               value={formData.vehiculo_id}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             >
               <option value="">Selecciona un vehículo</option>
               {vehiculos.map(v => (
@@ -246,7 +246,7 @@ export default function EditarRegistro() {
               value={formData.fecha}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             />
           </div>
 
@@ -265,7 +265,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="123456.78"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               />
             </div>
 
@@ -282,7 +282,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="450.25"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Kilómetros desde la última carga
@@ -305,7 +305,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="12.50"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               />
             </div>
 
@@ -322,7 +322,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="135000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -341,7 +341,7 @@ export default function EditarRegistro() {
               step="0.01"
               required
               placeholder="15.5"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             />
             <p className="mt-1 text-xs text-gray-500">
               Rendimiento mostrado en el tablero del vehículo
@@ -359,7 +359,7 @@ export default function EditarRegistro() {
               value={formData.marca_estacion_id}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             >
               <option value="">Selecciona una marca</option>
               {marcasEstacion.map(m => (
@@ -382,7 +382,7 @@ export default function EditarRegistro() {
               onChange={handleChange}
               required
               disabled={!formData.marca_estacion_id}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="">
                 {formData.marca_estacion_id ? 'Selecciona una estación' : 'Primero selecciona una marca'}
@@ -429,7 +429,7 @@ export default function EditarRegistro() {
               onChange={handleChange}
               rows={3}
               placeholder="Ej: Aire acondicionado encendido todo el trayecto, tráfico pesado, subidas pronunciadas..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white resize-none"
             />
             <p className="mt-1 text-xs text-gray-500">
               Agrega cualquier observación relevante sobre este registro
