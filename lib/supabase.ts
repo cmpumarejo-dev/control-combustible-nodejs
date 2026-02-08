@@ -1,9 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Tipos para la base de datos
 export type Vehiculo = {
@@ -16,12 +16,14 @@ export type Vehiculo = {
   cilindrada_motor: number
   activo: boolean
   motorizacion_tipo_id: number
+  user_id: string
   created_at: string
 }
 
 export type RegistroCombustible = {
   id?: number
   vehiculo_id: number
+  user_id: string
   fecha: string
   kilometraje_total: number
   kilometraje_parcial: number
@@ -54,6 +56,7 @@ export type EstacionServicio = {
 export type RegistroCalculado = {
   id: number
   vehiculo_id: number
+  user_id: string
   placa: string
   fecha: string
   kilometraje_total: number

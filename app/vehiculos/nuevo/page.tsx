@@ -1,11 +1,14 @@
 'use client'
 
+import ProtectedRoute from '@/components/ProtectedRoute'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function NuevoVehiculo() {
   const router = useRouter()
+  const { user } = useAuth()
 
   const [formData, setFormData] = useState({
     placa: '',
@@ -52,6 +55,11 @@ export default function NuevoVehiculo() {
         throw new Error('Ya existe un vehículo con esta placa')
       }
 
+      // Verificar que el usuario esté autenticado
+      if (!user) {
+        throw new Error('Debes estar autenticado para crear un vehículo')
+      }
+
       const nuevoVehiculo = {
         placa: formData.placa.trim().toUpperCase(),
         marca: formData.marca.trim(),
@@ -60,7 +68,8 @@ export default function NuevoVehiculo() {
         combustible_tipo: formData.combustible_tipo,
         cilindrada_motor: parseFloat(formData.cilindrada_motor),
         motorizacion_tipo_id: parseInt(formData.motorizacion_tipo_id),
-        activo: formData.activo
+        activo: formData.activo,
+        user_id: user.id
       }
 
       const { error } = await supabase

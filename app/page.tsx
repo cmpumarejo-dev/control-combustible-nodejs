@@ -1,6 +1,32 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 
 export default function Home() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login')
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-lg text-gray-600">Cargando...</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null // Se está redirigiendo
+  }
+
   return (
     <div className="space-y-8">
       <div className="text-center">

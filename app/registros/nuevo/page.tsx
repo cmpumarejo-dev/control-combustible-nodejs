@@ -1,13 +1,16 @@
 'use client'
 
+import ProtectedRoute from '@/components/ProtectedRoute'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Vehiculo, MarcaEstacion, EstacionServicio } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 function NuevoRegistroForm() {
   const searchParams = useSearchParams()
   const vehiculoIdFromUrl = searchParams.get('vehiculo')
+  const { user } = useAuth()
 
   // Estados para los selects
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
@@ -109,9 +112,15 @@ function NuevoRegistroForm() {
         throw new Error('Por favor completa todos los campos obligatorios')
       }
 
+      // Verificar que el usuario esté autenticado
+      if (!user) {
+        throw new Error('Debes estar autenticado para crear un registro')
+      }
+
       // Convertir a números los campos numéricos
       const registro = {
         vehiculo_id: parseInt(formData.vehiculo_id),
+        user_id: user.id,
         fecha: formData.fecha,
         kilometraje_total: parseFloat(formData.kilometraje_total),
         kilometraje_parcial: parseFloat(formData.kilometraje_parcial),
@@ -434,12 +443,14 @@ function NuevoRegistroForm() {
 
 export default function NuevoRegistro() {
   return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-lg text-gray-600">Cargando formulario...</div>
-      </div>
-    }>
-      <NuevoRegistroForm />
-    </Suspense>
+    <ProtectedRoute>
+      <Suspense fallback={
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-lg text-gray-600">Cargando formulario...</div>
+        </div>
+      }>
+        <NuevoRegistroForm />
+      </Suspense>
+    </ProtectedRoute>
   )
 }
