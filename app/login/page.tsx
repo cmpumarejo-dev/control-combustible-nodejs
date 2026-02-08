@@ -37,7 +37,7 @@ export default function LoginPage() {
         : 'Error al iniciar sesión. Por favor intenta de nuevo.')
       setLoading(false)
     } else {
-      router.push('/registros')
+      router.push('/')
     }
   }
 
