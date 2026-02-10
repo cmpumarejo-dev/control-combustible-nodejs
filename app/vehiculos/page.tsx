@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Vehiculo } from '@/lib/supabase'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 type EstadisticasVehiculo = {
   vehiculo: Vehiculo
@@ -15,7 +16,7 @@ type EstadisticasVehiculo = {
   costoPorKm: number
 }
 
-export default function VehiculosPage() {
+function VehiculosPageContent() {
   const [vehiculos, setVehiculos] = useState<EstadisticasVehiculo[]>([])
   const [expandidos, setExpandidos] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -224,7 +225,7 @@ export default function VehiculosPage() {
         <h1 className="text-3xl font-bold text-gray-900">Mis Vehículos</h1>
         <button
           onClick={() => window.location.href = '/vehiculos/nuevo'}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          className="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-800"
         >
           + Agregar Vehículo
         </button>
@@ -232,30 +233,30 @@ export default function VehiculosPage() {
 
       {/* Resumen */}
       {vehiculos.length > 0 && (
-        <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
-          <h3 className="text-lg font-semibold text-green-900 mb-2">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Resumen General
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-sm text-green-700">Total vehículos</div>
-              <div className="text-2xl font-bold text-green-900">{vehiculos.length}</div>
+              <div className="text-sm text-gray-700">Total vehículos</div>
+              <div className="text-2xl font-bold text-gray-900">{vehiculos.length}</div>
             </div>
             <div>
-              <div className="text-sm text-green-700">Activos</div>
-              <div className="text-2xl font-bold text-green-900">
+              <div className="text-sm text-gray-700">Activos</div>
+              <div className="text-2xl font-bold text-gray-900">
                 {vehiculos.filter(v => v.vehiculo.activo).length}
               </div>
             </div>
             <div>
-              <div className="text-sm text-green-700">Total registros</div>
-              <div className="text-2xl font-bold text-green-900">
+              <div className="text-sm text-gray-700">Total registros</div>
+              <div className="text-2xl font-bold text-gray-900">
                 {vehiculos.reduce((sum, v) => sum + v.totalRegistros, 0)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-green-700">Gasto total</div>
-              <div className="text-2xl font-bold text-green-900">
+              <div className="text-sm text-gray-700">Gasto total</div>
+              <div className="text-2xl font-bold text-gray-900">
                 {formatearMoneda(vehiculos.reduce((sum, v) => sum + v.totalGastado, 0))}
               </div>
             </div>
@@ -275,7 +276,7 @@ export default function VehiculosPage() {
           </p>
           <button
             onClick={() => window.location.href = '/vehiculos/nuevo'}
-            className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
+            className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-800"
           >
             Agregar primer vehículo
           </button>
@@ -299,14 +300,14 @@ export default function VehiculosPage() {
                     <div className="flex-1">
                       {/* Placa y vehículo */}
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xl font-bold text-blue-600">
+                        <span className="text-xl font-bold text-gray-600">
                           {vehiculo.placa}
                         </span>
                         <span className="font-semibold text-gray-900">
                           {vehiculo.marca} {vehiculo.linea} ({vehiculo.modelo})
                         </span>
                         {vehiculo.activo ? (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          <span className="text-xs bg-green-100 text-gray-700 px-2 py-1 rounded">
                             ✓ Activo
                           </span>
                         ) : (
@@ -347,55 +348,55 @@ export default function VehiculosPage() {
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             {/* Urbano */}
-                            <div className="text-center p-3 bg-blue-50 rounded-lg">
-                              <div className="text-sm text-blue-700 mb-1">🏙️ Urbano</div>
-                              <div className="text-2xl font-bold text-blue-900">
+                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                              <div className="text-sm text-gray-700 mb-1">Urbano</div>
+                              <div className="text-2xl font-bold text-gray-900">
                                 {urbano.registros > 0 ? formatearNumero(urbano.promedio) : '-'}
                               </div>
-                              <div className="text-xs text-blue-600">
+                              <div className="text-xs text-gray-600">
                                 {urbano.registros > 0 ? 'km/gal' : 'Sin datos'}
                               </div>
-                              <div className="text-xs text-blue-500 mt-1">
+                              <div className="text-xs text-gray-500 mt-1">
                                 {urbano.registros} {urbano.registros === 1 ? 'registro' : 'registros'}
                               </div>
                             </div>
 
                             {/* Carretera */}
-                            <div className="text-center p-3 bg-green-50 rounded-lg">
-                              <div className="text-sm text-green-700 mb-1">🛣️ Carretera</div>
-                              <div className="text-2xl font-bold text-green-900">
+                            <div className="text-center p-3 bg-gray-100 rounded-lg">
+                              <div className="text-sm text-gray-700 mb-1">Carretera</div>
+                              <div className="text-2xl font-bold text-gray-900">
                                 {carretera.registros > 0 ? formatearNumero(carretera.promedio) : '-'}
                               </div>
-                              <div className="text-xs text-green-600">
+                              <div className="text-xs text-gray-600">
                                 {carretera.registros > 0 ? 'km/gal' : 'Sin datos'}
                               </div>
-                              <div className="text-xs text-green-500 mt-1">
+                              <div className="text-xs text-gray-500 mt-1">
                                 {carretera.registros} {carretera.registros === 1 ? 'registro' : 'registros'}
                               </div>
                             </div>
 
                             {/* Mixto */}
-                            <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                              <div className="text-sm text-yellow-700 mb-1">🔀 Mixto</div>
-                              <div className="text-2xl font-bold text-yellow-900">
+                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                              <div className="text-sm text-gray-700 mb-1">Mixto</div>
+                              <div className="text-2xl font-bold text-gray-900">
                                 {mixto.registros > 0 ? formatearNumero(mixto.promedio) : '-'}
                               </div>
-                              <div className="text-xs text-yellow-600">
+                              <div className="text-xs text-gray-600">
                                 {mixto.registros > 0 ? 'km/gal' : 'Sin datos'}
                               </div>
-                              <div className="text-xs text-yellow-500 mt-1">
+                              <div className="text-xs text-gray-500 mt-1">
                                 {mixto.registros} {mixto.registros === 1 ? 'registro' : 'registros'}
                               </div>
                             </div>
 
                             {/* General */}
-                            <div className="text-center p-3 bg-purple-50 rounded-lg">
-                              <div className="text-sm text-purple-700 mb-1">📊 General</div>
-                              <div className="text-2xl font-bold text-purple-900">
+                            <div className="text-center p-3 bg-gray-100 rounded-lg">
+                              <div className="text-sm text-gray-700 mb-1">General</div>
+                              <div className="text-2xl font-bold text-gray-900">
                                 {formatearNumero(promedioGeneral)}
                               </div>
-                              <div className="text-xs text-purple-600">km/gal</div>
-                              <div className="text-xs text-purple-500 mt-1">
+                              <div className="text-xs text-gray-600">km/gal</div>
+                              <div className="text-xs text-gray-500 mt-1">
                                 {totalRegistros} total
                               </div>
                             </div>
@@ -435,27 +436,27 @@ export default function VehiculosPage() {
                             e.stopPropagation()
                             window.location.href = `/registros/nuevo?vehiculo=${vehiculo.id}`
                           }}
-                          className="flex-1 md:flex-initial px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                          className="flex-1 md:flex-initial px-6 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
                         >
-                          ➕ Nuevo Registro
+                          Nuevo Registro
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             window.location.href = `/registros?vehiculo=${vehiculo.id}`
                           }}
-                          className="flex-1 md:flex-initial px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
+                          className="flex-1 md:flex-initial px-6 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
                         >
-                          📋 Ver Registros
+                          Ver Registros
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             window.location.href = `/vehiculos/editar/${vehiculo.id}`
                           }}
-                          className="flex-1 md:flex-initial px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                          className="flex-1 md:flex-initial px-6 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
                         >
-                          ✏️ Editar
+                          Editar
                         </button>
                         <button
                           onClick={(e) => {
@@ -465,15 +466,15 @@ export default function VehiculosPage() {
                           disabled={cambiandoEstado === vehiculo.id}
                           className={`flex-1 md:flex-initial px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed ${
                             vehiculo.activo
-                              ? 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500'
-                              : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
+                              ? 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500'
+                              : 'bg-gray-700 text-white hover:bg-gray-800 focus:ring-gray-500'
                           }`}
                         >
                           {cambiandoEstado === vehiculo.id
-                            ? '⏳ Procesando...'
+                            ? 'Procesando...'
                             : vehiculo.activo
-                            ? '⏸️ Desactivar'
-                            : '▶️ Activar'}
+                            ? 'Desactivar'
+                            : 'Activar'}
                         </button>
                         <button
                           onClick={(e) => {
@@ -483,7 +484,7 @@ export default function VehiculosPage() {
                           disabled={eliminando === vehiculo.id}
                           className="flex-1 md:flex-initial px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                          {eliminando === vehiculo.id ? '🗑️ Eliminando...' : '🗑️ Eliminar'}
+                          {eliminando === vehiculo.id ? 'Eliminando...' : 'Eliminar'}
                         </button>
                       </div>
                     </div>
@@ -495,5 +496,13 @@ export default function VehiculosPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function VehiculosPage() {
+  return (
+    <ProtectedRoute>
+      <VehiculosPageContent />
+    </ProtectedRoute>
   )
 }

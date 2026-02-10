@@ -208,7 +208,7 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-gray-900">Últimos Registros</h2>
             <Link 
               href="/registros"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-gray-700 hover:text-gray-900 font-medium"
             >
               Ver todos →
             </Link>
@@ -226,7 +226,7 @@ export default function Home() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-medium text-gray-900">
-                        {new Date(registro.fecha).toLocaleDateString('es-CO', { 
+                        {new Date(registro.fecha + 'T00:00:00').toLocaleDateString('es-CO', { 
                           day: '2-digit', 
                           month: 'short',
                           year: 'numeric'
@@ -265,7 +265,7 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-gray-900">Tus Vehículos</h2>
             <Link 
               href="/vehiculos/nuevo"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-blue-600 hover:text-gray-700 font-medium"
             >
               + Agregar Vehículo
             </Link>
@@ -322,12 +322,12 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link 
           href="/registros/nuevo"
-          className="block bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-6 shadow-sm transition-colors"
+          className="block bg-gray-700 hover:bg-gray-800 text-white rounded-lg p-6 shadow-sm transition-colors"
         >
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold mb-1">Nuevo Registro</h3>
-              <p className="text-sm text-blue-100">Registra una nueva carga de combustible</p>
+              <p className="text-sm text-gray-300">Registra una nueva carga de combustible</p>
             </div>
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

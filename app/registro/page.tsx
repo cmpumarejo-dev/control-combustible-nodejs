@@ -81,12 +81,26 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         {/* Logo/Título */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-900 mb-2">
-            ⛽ Control Combustible
+          <div className="flex items-center justify-center mb-4">
+            <svg className="w-16 h-16 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              {/* Cuerpo de la bomba */}
+              <rect x="6" y="4" width="8" height="14" rx="1" strokeWidth="2"/>
+              {/* Pantalla/Display */}
+              <rect x="8" y="7" width="4" height="3" fill="currentColor" opacity="0.3"/>
+              {/* Manguera */}
+              <path d="M14 10 L17 10 C18 10 18.5 10.5 18.5 11.5 L18.5 14.5" strokeWidth="2" strokeLinecap="round"/>
+              {/* Boquilla */}
+              <circle cx="18.5" cy="15.5" r="1.5" fill="currentColor"/>
+              {/* Base */}
+              <line x1="5" y1="18" x2="15" y2="18" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Control Combustible
           </h1>
           <p className="text-gray-600">
             Crea tu cuenta para empezar
@@ -119,7 +133,7 @@ export default function RegistroPage() {
                 onChange={handleChange}
                 required
                 autoComplete="email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 placeholder="tu@email.com"
               />
             </div>
@@ -137,7 +151,7 @@ export default function RegistroPage() {
                 onChange={handleChange}
                 required
                 autoComplete="new-password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 placeholder="Mínimo 6 caracteres"
               />
               <p className="mt-1 text-xs text-gray-500">
@@ -158,13 +172,13 @@ export default function RegistroPage() {
                 onChange={handleChange}
                 required
                 autoComplete="new-password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 placeholder="Repite tu contraseña"
               />
             </div>
 
             {/* Términos y Condiciones */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
               <p className="text-xs text-gray-700">
                 Al crear una cuenta, aceptas que tus datos de vehículos y consumo de combustible 
                 serán almacenados de forma segura y privada. Solo tú tendrás acceso a tu información.
@@ -175,7 +189,7 @@ export default function RegistroPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-gray-700 text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
             </button>
@@ -185,7 +199,7 @@ export default function RegistroPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               ¿Ya tienes cuenta?{' '}
-              <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+              <Link href="/login" className="text-gray-700 hover:text-gray-900 font-medium">
                 Inicia sesión aquí
               </Link>
             </p>

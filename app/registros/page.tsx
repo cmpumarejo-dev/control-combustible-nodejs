@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { RegistroCalculado, Vehiculo, MarcaEstacion, EstacionServicio } from '@/lib/supabase'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 type Filtros = {
   vehiculo_id: string
@@ -17,6 +18,7 @@ type Filtros = {
 
 function RegistrosPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const vehiculoIdFromUrl = searchParams.get('vehiculo')
   
   const [registros, setRegistros] = useState<RegistroCalculado[]>([])
@@ -254,7 +256,7 @@ function RegistrosPageContent() {
   }
 
   function formatearFecha(fecha: string) {
-    return new Date(fecha).toLocaleDateString('es-CO', {
+    return new Date(fecha + 'T00:00:00').toLocaleDateString('es-CO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
@@ -324,13 +326,13 @@ function RegistrosPageContent() {
           <h1 className="text-3xl font-bold text-gray-900">Registros de Combustible</h1>
           {vehiculoIdFromUrl && (
             <p className="text-sm text-gray-600 mt-1">
-              Filtrando por vehículo: <span className="font-semibold text-blue-600">
+              Filtrando por vehículo: <span className="font-semibold text-gray-700">
                 {vehiculos.find(v => v.id === parseInt(vehiculoIdFromUrl))?.placa || 'Cargando...'}
               </span>
               {' '}
               <button
                 onClick={() => window.location.href = '/registros'}
-                className="text-blue-600 hover:text-blue-800 underline"
+                className="text-gray-700 hover:text-blue-800 underline"
               >
                 Ver todos
               </button>
@@ -339,7 +341,7 @@ function RegistrosPageContent() {
         </div>
         <button
           onClick={() => window.location.href = '/registros/nuevo'}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          className="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-800"
         >
           + Nuevo Registro
         </button>
@@ -370,7 +372,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.vehiculo_id}
                   onChange={(e) => handleFiltroChange('vehiculo_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos los vehículos</option>
                   {vehiculos.map(v => (
@@ -389,7 +391,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.anio}
                   onChange={(e) => handleFiltroChange('anio', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos</option>
                   {anios.map(a => (
@@ -406,7 +408,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.mes}
                   onChange={(e) => handleFiltroChange('mes', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos</option>
                   {meses.map(m => (
@@ -423,7 +425,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.marca_estacion_id}
                   onChange={(e) => handleFiltroChange('marca_estacion_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 >
                   <option value="">Todas las marcas</option>
                   {marcasEstacion.map(m => (
@@ -441,7 +443,7 @@ function RegistrosPageContent() {
                   value={filtros.estacion_servicio_id}
                   onChange={(e) => handleFiltroChange('estacion_servicio_id', e.target.value)}
                   disabled={!filtros.marca_estacion_id && estacionesFiltradas.length === estaciones.length}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-100"
                 >
                   <option value="">Todas las estaciones</option>
                   {estacionesFiltradas.map(e => (
@@ -458,7 +460,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.tipo_recorrido}
                   onChange={(e) => handleFiltroChange('tipo_recorrido', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 >
                   <option value="">Todos</option>
                   <option value="Urbano">Urbano</option>
@@ -475,7 +477,7 @@ function RegistrosPageContent() {
                 <select
                   value={filtros.ordenar_por}
                   onChange={(e) => handleFiltroChange('ordenar_por', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
                 >
                   <option value="fecha_desc">Fecha (más reciente primero)</option>
                   <option value="fecha_asc">Fecha (más antigua primero)</option>
@@ -501,36 +503,36 @@ function RegistrosPageContent() {
 
       {/* Estadísticas */}
       {registrosFiltrados.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-300">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Estadísticas {registrosFiltrados.length !== registros.length && '(Filtradas)'}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
-              <div className="text-sm text-blue-700">Total registros</div>
-              <div className="text-2xl font-bold text-blue-900">{estadisticas.total}</div>
+              <div className="text-sm text-gray-600">Total registros</div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.total}</div>
             </div>
             <div>
-              <div className="text-sm text-blue-700">Promedio km/gal</div>
-              <div className="text-2xl font-bold text-blue-900">
+              <div className="text-sm text-gray-600">Promedio km/gal</div>
+              <div className="text-2xl font-bold text-gray-900">
                 {formatearNumero(estadisticas.promedioKmGalon)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-blue-700">Total gastado</div>
-              <div className="text-2xl font-bold text-blue-900">
+              <div className="text-sm text-gray-600">Total gastado</div>
+              <div className="text-2xl font-bold text-gray-900">
                 {formatearMoneda(estadisticas.totalGastado)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-blue-700">Mejor carga</div>
-              <div className="text-2xl font-bold text-green-700">
+              <div className="text-sm text-gray-600">Mejor carga</div>
+              <div className="text-2xl font-bold text-gray-900">
                 {formatearNumero(estadisticas.mejorRendimiento)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-blue-700">Peor carga</div>
-              <div className="text-2xl font-bold text-orange-700">
+              <div className="text-sm text-gray-600">Peor carga</div>
+              <div className="text-2xl font-bold text-gray-900">
                 {formatearNumero(estadisticas.peorRendimiento)}
               </div>
             </div>
@@ -541,7 +543,6 @@ function RegistrosPageContent() {
       {/* Tarjetas de Registros */}
       {registrosFiltrados.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <div className="text-gray-300 text-6xl mb-4">📋</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             No hay registros
           </h3>
@@ -553,7 +554,7 @@ function RegistrosPageContent() {
           {registros.length === 0 && (
             <button
               onClick={() => window.location.href = '/registros/nuevo'}
-              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700"
+              className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-800"
             >
               Crear primer registro
             </button>
@@ -563,12 +564,8 @@ function RegistrosPageContent() {
         <div className="space-y-4">
           {registrosFiltrados.map(registro => {
             const isExpanded = expandidos.has(registro.id)
-            const tipoIcon = registro.tipo_recorrido === 'Urbano' ? '🏙️' :
-                            registro.tipo_recorrido === 'Carretera' ? '🛣️' : '🔀'
             const variacionColor = registro.variacion_porcentaje > 0 ? 'text-green-600' :
                                   registro.variacion_porcentaje < 0 ? 'text-red-600' : 'text-gray-600'
-            const variacionIcon = registro.variacion_porcentaje > 0 ? '📈' :
-                                 registro.variacion_porcentaje < 0 ? '📉' : '➡️'
 
             return (
               <div
@@ -588,11 +585,11 @@ function RegistrosPageContent() {
                           {formatearFecha(registro.fecha)}
                         </span>
                         <span className="text-gray-400">•</span>
-                        <span className="font-semibold text-blue-600">
+                        <span className="font-semibold text-gray-700">
                           {registro.placa}
                         </span>
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                          {tipoIcon} {registro.tipo_recorrido}
+                          {registro.tipo_recorrido}
                         </span>
                       </div>
                       
@@ -679,7 +676,7 @@ function RegistrosPageContent() {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Variación:</span>
                             <span className={`font-semibold ${variacionColor}`}>
-                              {formatearNumero(registro.variacion_porcentaje)}% {variacionIcon}
+                              {formatearNumero(registro.variacion_porcentaje)}%
                             </span>
                           </div>
                         </div>
@@ -701,16 +698,16 @@ function RegistrosPageContent() {
                           </div>
                           <div>
                             <div className="text-gray-600 text-xs mb-1">Tipo de recorrido</div>
-                            <div className="font-semibold">{tipoIcon} {registro.tipo_recorrido}</div>
+                            <div className="font-semibold">{registro.tipo_recorrido}</div>
                           </div>
                         </div>
                       </div>
 
                       {/* Notas / Comentarios */}
                       {registro.notas && (
-                        <div className="bg-yellow-50 rounded-lg p-4 shadow-sm md:col-span-2 border border-yellow-200">
+                        <div className="bg-gray-50 rounded-lg p-4 shadow-sm md:col-span-2 border border-gray-200">
                           <h4 className="font-semibold text-gray-900 mb-2 text-sm">
-                            📝 Notas
+                            Notas
                           </h4>
                           <p className="text-sm text-gray-700 whitespace-pre-wrap">
                             {registro.notas}
@@ -725,11 +722,11 @@ function RegistrosPageContent() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `/registros/editar/${registro.id}`
+                            router.push(`/registros/editar/${registro.id}`)
                           }}
-                          className="flex-1 md:flex-initial px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                          className="flex-1 md:flex-initial px-6 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
                         >
-                          ✏️ Editar
+                          Editar
                         </button>
                         <button
                           onClick={(e) => {
@@ -739,7 +736,7 @@ function RegistrosPageContent() {
                           disabled={eliminando === registro.id}
                           className="flex-1 md:flex-initial px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                          {eliminando === registro.id ? '🗑️ Eliminando...' : '🗑️ Eliminar'}
+                          {eliminando === registro.id ? 'Eliminando...' : 'Eliminar'}
                         </button>
                       </div>
                     </div>
@@ -756,12 +753,14 @@ function RegistrosPageContent() {
 
 export default function RegistrosPage() {
   return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-lg text-gray-600">Cargando registros...</div>
-      </div>
-    }>
-      <RegistrosPageContent />
-    </Suspense>
+    <ProtectedRoute>
+      <Suspense fallback={
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-lg text-gray-600">Cargando registros...</div>
+        </div>
+      }>
+        <RegistrosPageContent />
+      </Suspense>
+    </ProtectedRoute>
   )
 }
