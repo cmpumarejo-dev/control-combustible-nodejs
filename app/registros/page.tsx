@@ -27,6 +27,10 @@ function RegistrosPageContent() {
   const [loading, setLoading] = useState(true)
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [eliminando, setEliminando] = useState<number | null>(null)
+  
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1)
+  const registrosPorPagina = 10
 
   // Datos para los filtros
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
@@ -282,6 +286,7 @@ function RegistrosPageContent() {
   // Calcular estadísticas de los registros filtrados
   const estadisticas = {
     total: registrosFiltrados.length,
+    totalKmRecorridos: registrosFiltrados.reduce((sum, r) => sum + r.kilometraje_parcial, 0),
     promedioKmGalon: registrosFiltrados.length > 0
       ? registrosFiltrados.reduce((sum, r) => sum + r.km_por_galon_real, 0) / registrosFiltrados.length
       : 0,
@@ -293,6 +298,17 @@ function RegistrosPageContent() {
       ? Math.min(...registrosFiltrados.map(r => r.km_por_galon_real))
       : 0
   }
+
+  // Paginación
+  const totalPaginas = Math.ceil(registrosFiltrados.length / registrosPorPagina)
+  const indiceInicio = (paginaActual - 1) * registrosPorPagina
+  const indiceFin = indiceInicio + registrosPorPagina
+  const registrosPaginados = registrosFiltrados.slice(indiceInicio, indiceFin)
+
+  // Resetear a página 1 cuando cambian los filtros
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [filtros])
 
   const meses = [
     { value: '1', label: 'Enero' },
@@ -340,7 +356,12 @@ function RegistrosPageContent() {
           )}
         </div>
         <button
-          onClick={() => window.location.href = '/registros/nuevo'}
+          onClick={() => {
+            const url = filtros.vehiculo_id 
+              ? `/registros/nuevo?vehiculo=${filtros.vehiculo_id}`
+              : '/registros/nuevo'
+            window.location.href = url
+          }}
           className="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-800"
         >
           + Nuevo Registro
@@ -507,10 +528,12 @@ function RegistrosPageContent() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Estadísticas {registrosFiltrados.length !== registros.length && '(Filtradas)'}
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <div>
-              <div className="text-sm text-gray-600">Total registros</div>
-              <div className="text-2xl font-bold text-gray-900">{estadisticas.total}</div>
+              <div className="text-sm text-gray-600">KM Recorridos</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {formatearNumero(estadisticas.totalKmRecorridos, 0)}
+              </div>
             </div>
             <div>
               <div className="text-sm text-gray-600">Promedio km/gal</div>
@@ -535,6 +558,10 @@ function RegistrosPageContent() {
               <div className="text-2xl font-bold text-gray-900">
                 {formatearNumero(estadisticas.peorRendimiento)}
               </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Total registros</div>
+              <div className="text-2xl font-bold text-gray-900">{estadisticas.total}</div>
             </div>
           </div>
         </div>
@@ -562,7 +589,7 @@ function RegistrosPageContent() {
         </div>
       ) : (
         <div className="space-y-4">
-          {registrosFiltrados.map(registro => {
+          {registrosPaginados.map(registro => {
             const isExpanded = expandidos.has(registro.id)
             const variacionColor = registro.variacion_porcentaje > 0 ? 'text-green-600' :
                                   registro.variacion_porcentaje < 0 ? 'text-red-600' : 'text-gray-600'
@@ -579,8 +606,8 @@ function RegistrosPageContent() {
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
-                      {/* Fecha y Vehículo */}
-                      <div className="flex items-center gap-3 mb-2">
+                      {/* Línea 1: Fecha, Vehículo y KM Total */}
+                      <div className="flex items-center gap-3 mb-3">
                         <span className="font-semibold text-gray-900">
                           {formatearFecha(registro.fecha)}
                         </span>
@@ -591,9 +618,13 @@ function RegistrosPageContent() {
                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                           {registro.tipo_recorrido}
                         </span>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-xs text-gray-500">
+                          Odómetro: {formatearNumero(registro.kilometraje_total, 0)} km
+                        </span>
                       </div>
                       
-                      {/* Datos principales */}
+                      {/* Línea 2: Métricas principales */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-2">
                         <div>
                           <div className="text-gray-500 text-xs">Distancia</div>
@@ -609,7 +640,7 @@ function RegistrosPageContent() {
                         </div>
                         <div>
                           <div className="text-gray-500 text-xs">Rendimiento</div>
-                          <div className="font-semibold text-green-600">
+                          <div className="font-semibold text-gray-900">
                             {formatearNumero(registro.km_por_galon_real)} km/gal
                           </div>
                         </div>
@@ -621,7 +652,7 @@ function RegistrosPageContent() {
                         </div>
                       </div>
                       
-                      {/* Estación */}
+                      {/* Línea 3: Estación */}
                       <div className="text-sm text-gray-500">
                         {registro.estacion} • {registro.marca_estacion}
                       </div>
@@ -745,6 +776,65 @@ function RegistrosPageContent() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Paginación */}
+      {totalPaginas > 1 && (
+        <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+          <div className="text-sm text-gray-600">
+            Página {paginaActual} de {totalPaginas} • {registrosFiltrados.length} registros
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPaginaActual(prev => Math.max(1, prev - 1))}
+              disabled={paginaActual === 1}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              Anterior
+            </button>
+            
+            {/* Números de página */}
+            <div className="hidden sm:flex gap-1">
+              {[...Array(totalPaginas)].map((_, i) => {
+                const numeroPagina = i + 1
+                // Mostrar solo algunas páginas para no saturar
+                if (
+                  numeroPagina === 1 ||
+                  numeroPagina === totalPaginas ||
+                  (numeroPagina >= paginaActual - 1 && numeroPagina <= paginaActual + 1)
+                ) {
+                  return (
+                    <button
+                      key={numeroPagina}
+                      onClick={() => setPaginaActual(numeroPagina)}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        paginaActual === numeroPagina
+                          ? 'bg-gray-700 text-white'
+                          : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {numeroPagina}
+                    </button>
+                  )
+                } else if (
+                  numeroPagina === paginaActual - 2 ||
+                  numeroPagina === paginaActual + 2
+                ) {
+                  return <span key={numeroPagina} className="px-2 py-2 text-gray-400">...</span>
+                }
+                return null
+              })}
+            </div>
+
+            <button
+              onClick={() => setPaginaActual(prev => Math.min(totalPaginas, prev + 1))}
+              disabled={paginaActual === totalPaginas}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       )}
     </div>

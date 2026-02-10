@@ -26,6 +26,7 @@ export default function Home() {
   const [ultimosRegistros, setUltimosRegistros] = useState<RegistroCalculado[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [loadingData, setLoadingData] = useState(true)
+  const [periodo, setPeriodo] = useState<'mes_vigente' | 'ultimos_30_dias'>('mes_vigente')
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,16 +35,26 @@ export default function Home() {
     if (user) {
       cargarDatos()
     }
-  }, [user, loading, router])
+  }, [user, loading, router, periodo])
 
   async function cargarDatos() {
     try {
-      // Obtener fecha de inicio del mes actual
       const hoy = new Date()
-      const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-      const fechaInicio = inicioMes.toISOString().split('T')[0]
+      let fechaInicio: string
 
-      // Cargar registros del mes actual
+      // Calcular fecha de inicio según período seleccionado
+      if (periodo === 'mes_vigente') {
+        // Primer día del mes actual
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+        fechaInicio = inicioMes.toISOString().split('T')[0]
+      } else {
+        // Últimos 30 días (restar 30 días a la fecha de hoy)
+        const hace30Dias = new Date(hoy)
+        hace30Dias.setDate(hace30Dias.getDate() - 30)
+        fechaInicio = hace30Dias.toISOString().split('T')[0]
+      }
+
+      // Cargar registros del período seleccionado
       const { data: registrosMes, error: errorRegistros } = await supabase
         .from('vista_registros_combustible_calculados')
         .select('*')
@@ -52,7 +63,7 @@ export default function Home() {
 
       if (errorRegistros) throw errorRegistros
 
-      // Calcular métricas del mes
+      // Calcular métricas del período
       let kmTotales = 0
       let gastoTotal = 0
       let sumaRendimiento = 0
@@ -121,9 +132,35 @@ export default function Home() {
         <h1 className="text-2xl font-bold text-gray-900">
           Bienvenido de nuevo, {user.email?.split('@')[0]}
         </h1>
-        <p className="text-gray-600 mt-1">
-          Resumen de tus últimos 30 días
-        </p>
+        <div className="flex items-center gap-4 mt-3">
+          <p className="text-gray-600">
+            Resumen de {periodo === 'mes_vigente' ? 'este mes' : 'los últimos 30 días'}
+          </p>
+          
+          {/* Selector de período */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPeriodo('mes_vigente')}
+              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                periodo === 'mes_vigente'
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Mes vigente
+            </button>
+            <button
+              onClick={() => setPeriodo('ultimos_30_dias')}
+              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                periodo === 'ultimos_30_dias'
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Últimos 30 días
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Cards de Métricas */}
@@ -136,7 +173,9 @@ export default function Home() {
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {metricas.kmTotales.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Este mes</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {periodo === 'mes_vigente' ? 'Este mes' : 'Últimos 30 días'}
+              </p>
             </div>
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,7 +193,9 @@ export default function Home() {
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 ${metricas.gastoTotal.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Este mes</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {periodo === 'mes_vigente' ? 'Este mes' : 'Últimos 30 días'}
+              </p>
             </div>
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +231,9 @@ export default function Home() {
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {metricas.totalRegistros}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Este mes</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {periodo === 'mes_vigente' ? 'Este mes' : 'Últimos 30 días'}
+              </p>
             </div>
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -35,6 +35,10 @@ function NuevoRegistroForm() {
 
   const [loading, setLoading] = useState(false)
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error', texto: string } | null>(null)
+  const [advertencias, setAdvertencias] = useState<string[]>([])
+  const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false)
+  const [datosParaGuardar, setDatosParaGuardar] = useState<any>(null)
+  const [ultimoKilometraje, setUltimoKilometraje] = useState<number | null>(null)
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -56,6 +60,37 @@ function NuevoRegistroForm() {
       setEstacionesFiltradas([])
     }
   }, [formData.marca_estacion_id, estaciones])
+
+  // Cargar último kilometraje cuando cambia el vehículo
+  useEffect(() => {
+    async function cargarUltimoKilometraje() {
+      if (formData.vehiculo_id && user) {
+        try {
+          const { data, error } = await supabase
+            .from('registros_combustible')
+            .select('kilometraje_total')
+            .eq('vehiculo_id', parseInt(formData.vehiculo_id))
+            .eq('user_id', user.id)
+            .order('fecha', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (data && !error) {
+            setUltimoKilometraje(data.kilometraje_total)
+          } else {
+            setUltimoKilometraje(null)
+          }
+        } catch (error) {
+          setUltimoKilometraje(null)
+        }
+      } else {
+        setUltimoKilometraje(null)
+      }
+    }
+
+    cargarUltimoKilometraje()
+  }, [formData.vehiculo_id, user])
 
   async function cargarDatos() {
     try {
@@ -101,10 +136,118 @@ function NuevoRegistroForm() {
     }))
   }
 
+  // Función para validar datos y detectar inconsistencias
+  async function validarDatos(registro: any): Promise<string[]> {
+    const advertenciasDetectadas: string[] = []
+
+    try {
+      // 1. Obtener el último registro del vehículo
+      const { data: ultimoRegistro } = await supabase
+        .from('registros_combustible')
+        .select('*')
+        .eq('vehiculo_id', registro.vehiculo_id)
+        .order('fecha', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      // 2. Obtener últimos 5 registros para promedios
+      const { data: ultimosRegistros } = await supabase
+        .from('vista_registros_combustible_calculados')
+        .select('*')
+        .eq('vehiculo_id', registro.vehiculo_id)
+        .order('fecha', { ascending: false })
+        .limit(5)
+
+      if (ultimoRegistro) {
+        // VALIDACIÓN 1: Odómetro debe avanzar
+        if (registro.kilometraje_total <= ultimoRegistro.kilometraje_total) {
+          advertenciasDetectadas.push(
+            `⚠️ El odómetro (${registro.kilometraje_total.toLocaleString()} km) debe ser mayor al último registro (${ultimoRegistro.kilometraje_total.toLocaleString()} km)`
+          )
+        }
+
+        // VALIDACIÓN 2: Kilometraje total vs (último km total + km parcial)
+        const kmTotalEsperado = ultimoRegistro.kilometraje_total + registro.kilometraje_parcial
+        const diferenciaKmTotal = Math.abs(registro.kilometraje_total - kmTotalEsperado)
+        
+        // Tolerancia: permitir hasta 5 km de diferencia (por decimales/redondeo)
+        if (diferenciaKmTotal > 5) {
+          advertenciasDetectadas.push(
+            `⚠️ El odómetro actual (${registro.kilometraje_total.toLocaleString()} km) no coincide con lo esperado (${kmTotalEsperado.toLocaleString()} km = último odómetro ${ultimoRegistro.kilometraje_total.toLocaleString()} + km parcial ${registro.kilometraje_parcial.toLocaleString()}). Diferencia: ${diferenciaKmTotal.toFixed(1)} km`
+          )
+        }
+      }
+
+      // VALIDACIÓN 3: Rendimiento vs promedio histórico
+      if (ultimosRegistros && ultimosRegistros.length > 0) {
+        const rendimientoActual = registro.kilometraje_parcial / registro.galones_recargados
+        const rendimientoPromedio = ultimosRegistros.reduce((sum, r) => sum + r.km_por_galon_real, 0) / ultimosRegistros.length
+        const diferenciaRendimiento = Math.abs(rendimientoActual - rendimientoPromedio)
+        const porcentajeDifRendimiento = (diferenciaRendimiento / rendimientoPromedio) * 100
+
+        // Advertir si el rendimiento varía más del 25% vs promedio
+        if (porcentajeDifRendimiento > 25) {
+          advertenciasDetectadas.push(
+            `⚠️ El rendimiento actual (${rendimientoActual.toFixed(1)} km/gal) difiere ${porcentajeDifRendimiento.toFixed(1)}% del promedio histórico (${rendimientoPromedio.toFixed(1)} km/gal)`
+          )
+        }
+      }
+
+      // VALIDACIÓN 4: Costo por galón vs últimos registros
+      if (ultimosRegistros && ultimosRegistros.length > 0) {
+        const costoPorGalonActual = registro.valor_recarga / registro.galones_recargados
+        const costosRecientes = ultimosRegistros.map(r => r.costo_por_galon)
+        const costoPromedio = costosRecientes.reduce((sum, c) => sum + c, 0) / costosRecientes.length
+        const diferenciaCosto = Math.abs(costoPorGalonActual - costoPromedio)
+        const porcentajeDifCosto = (diferenciaCosto / costoPromedio) * 100
+
+        // Advertir si el costo varía más del 15% vs promedio
+        if (porcentajeDifCosto > 15) {
+          advertenciasDetectadas.push(
+            `⚠️ El costo por galón (${costoPorGalonActual.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}) difiere ${porcentajeDifCosto.toFixed(1)}% del promedio reciente (${costoPromedio.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })})`
+          )
+        }
+      }
+
+      // VALIDACIÓN 5: Rendimiento razonablemente válido (límites absolutos)
+      const rendimiento = registro.kilometraje_parcial / registro.galones_recargados
+      if (rendimiento < 5) {
+        advertenciasDetectadas.push(
+          `⚠️ Rendimiento muy bajo (${rendimiento.toFixed(1)} km/gal). Verifica los datos.`
+        )
+      } else if (rendimiento > 80) {
+        advertenciasDetectadas.push(
+          `⚠️ Rendimiento muy alto (${rendimiento.toFixed(1)} km/gal). Verifica los datos.`
+        )
+      }
+
+      // VALIDACIÓN 6: Galones razonables (no más de 25 galones)
+      if (registro.galones_recargados > 25) {
+        advertenciasDetectadas.push(
+          `⚠️ Cantidad de galones muy alta (${registro.galones_recargados} gal). ¿Es correcto?`
+        )
+      }
+
+      // VALIDACIÓN 7: KM parcial no puede ser 0
+      if (registro.kilometraje_parcial === 0) {
+        advertenciasDetectadas.push(
+          `⚠️ El kilometraje parcial es 0. Esto no es válido.`
+        )
+      }
+
+    } catch (error) {
+      console.log('No hay registros previos, saltando validaciones comparativas')
+    }
+
+    return advertenciasDetectadas
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setMensaje(null)
+    setAdvertencias([])
 
     try {
       // Validaciones básicas
@@ -133,6 +276,35 @@ function NuevoRegistroForm() {
         notas: formData.notas || null
       }
 
+      // Validar datos y detectar inconsistencias
+      const advertenciasDetectadas = await validarDatos(registro)
+      
+      if (advertenciasDetectadas.length > 0) {
+        // Hay advertencias - mostrar modal de confirmación
+        setAdvertencias(advertenciasDetectadas)
+        setDatosParaGuardar(registro)
+        setMostrarModalConfirmacion(true)
+        setLoading(false)
+        return
+      }
+
+      // No hay advertencias - guardar directamente
+      await guardarRegistro(registro)
+
+    } catch (error: any) {
+      console.error('Error al validar:', error)
+      setMensaje({ 
+        tipo: 'error', 
+        texto: error.message || 'Error al validar el registro. Por favor intenta de nuevo.' 
+      })
+      setLoading(false)
+    }
+  }
+
+  // Función para guardar el registro (reutilizable)
+  async function guardarRegistro(registro: any) {
+    setLoading(true)
+    try {
       const { error } = await supabase
         .from('registros_combustible')
         .insert([registro])
@@ -155,6 +327,11 @@ function NuevoRegistroForm() {
         tipo_recorrido: 'Urbano',
         notas: ''
       })
+      
+      // Cerrar modal si estaba abierto
+      setMostrarModalConfirmacion(false)
+      setDatosParaGuardar(null)
+      setAdvertencias([])
 
     } catch (error: any) {
       console.error('Error al guardar:', error)
@@ -167,6 +344,21 @@ function NuevoRegistroForm() {
     }
   }
 
+  // Manejar confirmación desde el modal
+  function confirmarGuardado() {
+    if (datosParaGuardar) {
+      guardarRegistro(datosParaGuardar)
+    }
+  }
+
+  // Cancelar guardado y volver al formulario
+  function cancelarGuardado() {
+    setMostrarModalConfirmacion(false)
+    setDatosParaGuardar(null)
+    setAdvertencias([])
+    setLoading(false)
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="bg-white shadow-md rounded-lg p-6">
@@ -176,7 +368,7 @@ function NuevoRegistroForm() {
           </h1>
           {vehiculoIdFromUrl && (
             <p className="text-sm text-gray-600 mt-2">
-              Para vehículo: <span className="font-semibold text-blue-600">
+              Para vehículo: <span className="font-semibold text-gray-700">
                 {vehiculos.find(v => v.id === parseInt(vehiculoIdFromUrl))?.placa || 'Cargando...'}
               </span>
             </p>
@@ -205,7 +397,7 @@ function NuevoRegistroForm() {
               value={formData.vehiculo_id}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
             >
               <option value="">Selecciona un vehículo</option>
               {vehiculos.map(v => (
@@ -228,7 +420,7 @@ function NuevoRegistroForm() {
               value={formData.fecha}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
             />
           </div>
 
@@ -247,8 +439,13 @@ function NuevoRegistroForm() {
                 step="0.01"
                 required
                 placeholder="123456.78"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
+              {ultimoKilometraje !== null && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Último registro: {ultimoKilometraje.toLocaleString()} km
+                </p>
+              )}
             </div>
 
             <div>
@@ -264,7 +461,7 @@ function NuevoRegistroForm() {
                 step="0.01"
                 required
                 placeholder="450.25"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Kilómetros desde la última carga
@@ -287,7 +484,7 @@ function NuevoRegistroForm() {
                 step="0.01"
                 required
                 placeholder="12.50"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
             </div>
 
@@ -304,7 +501,7 @@ function NuevoRegistroForm() {
                 step="0.01"
                 required
                 placeholder="135000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -323,7 +520,7 @@ function NuevoRegistroForm() {
               step="0.01"
               required
               placeholder="15.5"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
             />
             <p className="mt-1 text-xs text-gray-500">
               Rendimiento mostrado en el tablero del vehículo
@@ -341,7 +538,7 @@ function NuevoRegistroForm() {
               value={formData.marca_estacion_id}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
             >
               <option value="">Selecciona una marca</option>
               {marcasEstacion.map(m => (
@@ -364,7 +561,7 @@ function NuevoRegistroForm() {
               onChange={handleChange}
               required
               disabled={!formData.marca_estacion_id}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="">
                 {formData.marca_estacion_id ? 'Selecciona una estación' : 'Primero selecciona una marca'}
@@ -411,7 +608,7 @@ function NuevoRegistroForm() {
               onChange={handleChange}
               rows={3}
               placeholder="Ej: Aire acondicionado encendido todo el trayecto, tráfico pesado, subidas pronunciadas..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white resize-none"
             />
             <p className="mt-1 text-xs text-gray-500">
               Agrega cualquier observación relevante sobre este registro
@@ -423,20 +620,75 @@ function NuevoRegistroForm() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="flex-1 bg-gray-700 text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {loading ? 'Guardando...' : 'Guardar Registro'}
             </button>
             <button
               type="button"
               onClick={() => window.history.back()}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Cancelar
             </button>
           </div>
         </form>
       </div>
+
+      {/* Modal de Confirmación de Advertencias */}
+      {mostrarModalConfirmacion && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    Advertencias Detectadas
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Hemos detectado posibles inconsistencias en los datos. Revisa y confirma si quieres guardar de todos modos.
+                  </p>
+                </div>
+              </div>
+
+              {/* Lista de Advertencias */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <ul className="space-y-3">
+                  {advertencias.map((advertencia, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <span className="flex-shrink-0 mt-0.5 text-yellow-600">•</span>
+                      <span className="text-gray-700">{advertencia}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Botones */}
+              <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">
+                <button
+                  onClick={cancelarGuardado}
+                  type="button"
+                  className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                >
+                  Corregir Datos
+                </button>
+                <button
+                  onClick={confirmarGuardado}
+                  type="button"
+                  disabled={loading}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Guardando...' : 'Guardar de Todos Modos'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
