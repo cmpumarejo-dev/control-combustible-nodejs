@@ -1,5 +1,6 @@
 'use client'
 
+import ProtectedRoute from '@/components/ProtectedRoute'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -34,6 +35,19 @@ export default function EditarRegistro() {
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error', texto: string } | null>(null)
+  
+  // Estados para agregar nueva estación
+  const [mostrarModalNuevaEstacion, setMostrarModalNuevaEstacion] = useState(false)
+  const [nuevaEstacion, setNuevaEstacion] = useState({
+    nombre: '',
+    direccion: ''
+  })
+  const [guardandoEstacion, setGuardandoEstacion] = useState(false)
+
+  // Estados para agregar nueva marca
+  const [mostrarModalNuevaMarca, setMostrarModalNuevaMarca] = useState(false)
+  const [nuevaMarca, setNuevaMarca] = useState('')
+  const [guardandoMarca, setGuardandoMarca] = useState(false)
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -178,6 +192,133 @@ export default function EditarRegistro() {
     }
   }
 
+  async function guardarNuevaEstacion() {
+    if (!nuevaEstacion.nombre.trim()) {
+      alert('El nombre de la estación es requerido')
+      return
+    }
+
+    if (!formData.marca_estacion_id) {
+      alert('Debes seleccionar primero una marca de estación')
+      return
+    }
+
+    setGuardandoEstacion(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('estaciones_servicio')
+        .insert([{
+          nombre: nuevaEstacion.nombre.trim(),
+          direccion: nuevaEstacion.direccion.trim() || null,
+          marca_estacion_id: parseInt(formData.marca_estacion_id),
+          municipio_id: null,
+          departamento_id: null
+        }])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Actualizar lista de estaciones
+      setEstaciones(prev => [...prev, data])
+      setEstacionesFiltradas(prev => [...prev, data])
+      
+      // Seleccionar automáticamente la nueva estación
+      setFormData(prev => ({
+        ...prev,
+        estacion_servicio_id: data.id.toString()
+      }))
+
+      // Cerrar modal y limpiar formulario
+      setMostrarModalNuevaEstacion(false)
+      setNuevaEstacion({ nombre: '', direccion: '' })
+      
+      // Mostrar mensaje de éxito
+      setMensaje({ 
+        tipo: 'success', 
+        texto: 'Estación creada exitosamente' 
+      })
+      setTimeout(() => setMensaje(null), 3000)
+
+    } catch (error) {
+      console.error('Error creando estación:', error)
+      alert('Error al crear la estación. Por favor intenta de nuevo.')
+    } finally {
+      setGuardandoEstacion(false)
+    }
+  }
+
+  function abrirModalNuevaEstacion() {
+    if (!formData.marca_estacion_id) {
+      alert('Debes seleccionar primero una marca de estación')
+      return
+    }
+    setMostrarModalNuevaEstacion(true)
+  }
+
+  function cerrarModalNuevaEstacion() {
+    setMostrarModalNuevaEstacion(false)
+    setNuevaEstacion({ nombre: '', direccion: '' })
+  }
+
+  async function guardarNuevaMarca() {
+    if (!nuevaMarca.trim()) {
+      alert('El nombre de la marca es requerido')
+      return
+    }
+
+    setGuardandoMarca(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('marcas_estacion')
+        .insert([{
+          nombre: nuevaMarca.trim()
+        }])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Actualizar lista de marcas
+      setMarcasEstacion(prev => [...prev, data])
+      
+      // Seleccionar automáticamente la nueva marca
+      setFormData(prev => ({
+        ...prev,
+        marca_estacion_id: data.id.toString(),
+        estacion_servicio_id: '' // Limpiar estación porque cambió la marca
+      }))
+
+      // Cerrar modal y limpiar formulario
+      setMostrarModalNuevaMarca(false)
+      setNuevaMarca('')
+      
+      // Mostrar mensaje de éxito
+      setMensaje({ 
+        tipo: 'success', 
+        texto: 'Marca creada exitosamente' 
+      })
+      setTimeout(() => setMensaje(null), 3000)
+
+    } catch (error) {
+      console.error('Error creando marca:', error)
+      alert('Error al crear la marca. Por favor intenta de nuevo.')
+    } finally {
+      setGuardandoMarca(false)
+    }
+  }
+
+  function abrirModalNuevaMarca() {
+    setMostrarModalNuevaMarca(true)
+  }
+
+  function cerrarModalNuevaMarca() {
+    setMostrarModalNuevaMarca(false)
+    setNuevaMarca('')
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -223,7 +364,7 @@ export default function EditarRegistro() {
               value={formData.vehiculo_id}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
             >
               <option value="">Selecciona un vehículo</option>
               {vehiculos.map(v => (
@@ -246,7 +387,7 @@ export default function EditarRegistro() {
               value={formData.fecha}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
             />
           </div>
 
@@ -265,7 +406,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="123456.78"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
             </div>
 
@@ -282,7 +423,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="450.25"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Kilómetros desde la última carga
@@ -305,7 +446,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="12.50"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
             </div>
 
@@ -322,7 +463,7 @@ export default function EditarRegistro() {
                 step="0.01"
                 required
                 placeholder="135000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -341,7 +482,7 @@ export default function EditarRegistro() {
               step="0.01"
               required
               placeholder="15.5"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
             />
             <p className="mt-1 text-xs text-gray-500">
               Rendimiento mostrado en el tablero del vehículo
@@ -353,21 +494,31 @@ export default function EditarRegistro() {
             <label htmlFor="marca_estacion_id" className="block text-sm font-medium text-gray-700 mb-1">
               Marca de Estación *
             </label>
-            <select
-              id="marca_estacion_id"
-              name="marca_estacion_id"
-              value={formData.marca_estacion_id}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-            >
-              <option value="">Selecciona una marca</option>
-              {marcasEstacion.map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.nombre}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                id="marca_estacion_id"
+                name="marca_estacion_id"
+                value={formData.marca_estacion_id}
+                onChange={handleChange}
+                required
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
+              >
+                <option value="">Selecciona una marca</option>
+                {marcasEstacion.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.nombre}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={abrirModalNuevaMarca}
+                className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
+                title="Agregar nueva marca"
+              >
+                + Nueva
+              </button>
+            </div>
           </div>
 
           {/* Estación */}
@@ -375,24 +526,40 @@ export default function EditarRegistro() {
             <label htmlFor="estacion_servicio_id" className="block text-sm font-medium text-gray-700 mb-1">
               Estación de Servicio *
             </label>
-            <select
-              id="estacion_servicio_id"
-              name="estacion_servicio_id"
-              value={formData.estacion_servicio_id}
-              onChange={handleChange}
-              required
-              disabled={!formData.marca_estacion_id}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">
-                {formData.marca_estacion_id ? 'Selecciona una estación' : 'Primero selecciona una marca'}
-              </option>
-              {estacionesFiltradas.map(e => (
-                <option key={e.id} value={e.id}>
-                  {e.nombre}
+            <div className="flex gap-2">
+              <select
+                id="estacion_servicio_id"
+                name="estacion_servicio_id"
+                value={formData.estacion_servicio_id}
+                onChange={handleChange}
+                required
+                disabled={!formData.marca_estacion_id}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {formData.marca_estacion_id ? 'Selecciona una estación' : 'Primero selecciona una marca'}
                 </option>
-              ))}
-            </select>
+                {estacionesFiltradas.map(e => (
+                  <option key={e.id} value={e.id}>
+                    {e.nombre}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={abrirModalNuevaEstacion}
+                disabled={!formData.marca_estacion_id}
+                className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                title={!formData.marca_estacion_id ? 'Selecciona primero una marca' : 'Agregar nueva estación'}
+              >
+                + Nueva
+              </button>
+            </div>
+            {!formData.marca_estacion_id && (
+              <p className="mt-1 text-xs text-gray-500">
+                Selecciona una marca para poder agregar estaciones
+              </p>
+            )}
           </div>
 
           {/* Tipo de Recorrido */}
@@ -429,7 +596,7 @@ export default function EditarRegistro() {
               onChange={handleChange}
               rows={3}
               placeholder="Ej: Aire acondicionado encendido todo el trayecto, tráfico pesado, subidas pronunciadas..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white resize-none"
             />
             <p className="mt-1 text-xs text-gray-500">
               Agrega cualquier observación relevante sobre este registro
@@ -441,7 +608,7 @@ export default function EditarRegistro() {
             <button
               type="submit"
               disabled={guardando}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="flex-1 bg-gray-700 text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {guardando ? 'Guardando cambios...' : 'Guardar Cambios'}
             </button>
@@ -449,13 +616,165 @@ export default function EditarRegistro() {
               type="button"
               onClick={() => router.push('/registros')}
               disabled={guardando}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
             >
               Cancelar
             </button>
           </div>
         </form>
       </div>
+
+      {/* Modal de Nueva Marca */}
+      {mostrarModalNuevaMarca && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Agregar Nueva Marca
+                </h3>
+                <button
+                  onClick={cerrarModalNuevaMarca}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  type="button"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Formulario */}
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="nombreMarca" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre de la Marca *
+                  </label>
+                  <input
+                    type="text"
+                    id="nombreMarca"
+                    value={nuevaMarca}
+                    onChange={(e) => setNuevaMarca(e.target.value)}
+                    placeholder="Ej: Terpel, Esso, Mobil"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                  <p className="text-xs text-gray-600">
+                    Una vez creada la marca, podrás agregar estaciones de servicio asociadas a ella.
+                  </p>
+                </div>
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={cerrarModalNuevaMarca}
+                  type="button"
+                  disabled={guardandoMarca}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={guardarNuevaMarca}
+                  type="button"
+                  disabled={guardandoMarca || !nuevaMarca.trim()}
+                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {guardandoMarca ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Nueva Estación */}
+      {mostrarModalNuevaEstacion && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Agregar Nueva Estación
+                </h3>
+                <button
+                  onClick={cerrarModalNuevaEstacion}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  type="button"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Formulario */}
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="nombreEstacion" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre de la Estación *
+                  </label>
+                  <input
+                    type="text"
+                    id="nombreEstacion"
+                    value={nuevaEstacion.nombre}
+                    onChange={(e) => setNuevaEstacion(prev => ({ ...prev, nombre: e.target.value }))}
+                    placeholder="Ej: Texaco Calle 10"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="direccionEstacion" className="block text-sm font-medium text-gray-700 mb-1">
+                    Dirección (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="direccionEstacion"
+                    value={nuevaEstacion.direccion}
+                    onChange={(e) => setNuevaEstacion(prev => ({ ...prev, direccion: e.target.value }))}
+                    placeholder="Ej: Calle 10 # 45-67"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
+                  />
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                  <p className="text-xs text-gray-600">
+                    <strong>Marca seleccionada:</strong> {marcasEstacion.find(m => m.id.toString() === formData.marca_estacion_id)?.nombre || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={cerrarModalNuevaEstacion}
+                  type="button"
+                  disabled={guardandoEstacion}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={guardarNuevaEstacion}
+                  type="button"
+                  disabled={guardandoEstacion || !nuevaEstacion.nombre.trim()}
+                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {guardandoEstacion ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

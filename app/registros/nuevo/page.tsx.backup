@@ -48,11 +48,6 @@ function NuevoRegistroForm() {
   })
   const [guardandoEstacion, setGuardandoEstacion] = useState(false)
 
-  // Estados para agregar nueva marca
-  const [mostrarModalNuevaMarca, setMostrarModalNuevaMarca] = useState(false)
-  const [nuevaMarca, setNuevaMarca] = useState('')
-  const [guardandoMarca, setGuardandoMarca] = useState(false)
-
   // Cargar datos iniciales
   useEffect(() => {
     cargarDatos()
@@ -442,63 +437,6 @@ function NuevoRegistroForm() {
     setNuevaEstacion({ nombre: '', direccion: '' })
   }
 
-  async function guardarNuevaMarca() {
-    if (!nuevaMarca.trim()) {
-      alert('El nombre de la marca es requerido')
-      return
-    }
-
-    setGuardandoMarca(true)
-
-    try {
-      const { data, error } = await supabase
-        .from('marcas_estacion')
-        .insert([{
-          nombre: nuevaMarca.trim()
-        }])
-        .select()
-        .single()
-
-      if (error) throw error
-
-      // Actualizar lista de marcas
-      setMarcasEstacion(prev => [...prev, data])
-      
-      // Seleccionar automáticamente la nueva marca
-      setFormData(prev => ({
-        ...prev,
-        marca_estacion_id: data.id.toString(),
-        estacion_servicio_id: '' // Limpiar estación porque cambió la marca
-      }))
-
-      // Cerrar modal y limpiar formulario
-      setMostrarModalNuevaMarca(false)
-      setNuevaMarca('')
-      
-      // Mostrar mensaje de éxito
-      setMensaje({ 
-        tipo: 'success', 
-        texto: 'Marca creada exitosamente' 
-      })
-      setTimeout(() => setMensaje(null), 3000)
-
-    } catch (error) {
-      console.error('Error creando marca:', error)
-      alert('Error al crear la marca. Por favor intenta de nuevo.')
-    } finally {
-      setGuardandoMarca(false)
-    }
-  }
-
-  function abrirModalNuevaMarca() {
-    setMostrarModalNuevaMarca(true)
-  }
-
-  function cerrarModalNuevaMarca() {
-    setMostrarModalNuevaMarca(false)
-    setNuevaMarca('')
-  }
-
   return (
     <div className="max-w-3xl mx-auto">
       <div className="bg-white shadow-md rounded-lg p-6">
@@ -672,31 +610,21 @@ function NuevoRegistroForm() {
             <label htmlFor="marca_estacion_id" className="block text-sm font-medium text-gray-700 mb-1">
               Marca de Estación *
             </label>
-            <div className="flex gap-2">
-              <select
-                id="marca_estacion_id"
-                name="marca_estacion_id"
-                value={formData.marca_estacion_id}
-                onChange={handleChange}
-                required
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
-              >
-                <option value="">Selecciona una marca</option>
-                {marcasEstacion.map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.nombre}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={abrirModalNuevaMarca}
-                className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition-colors whitespace-nowrap"
-                title="Agregar nueva marca"
-              >
-                + Nueva
-              </button>
-            </div>
+            <select
+              id="marca_estacion_id"
+              name="marca_estacion_id"
+              value={formData.marca_estacion_id}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
+            >
+              <option value="">Selecciona una marca</option>
+              {marcasEstacion.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.nombre}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Estación */}
@@ -800,75 +728,6 @@ function NuevoRegistroForm() {
           </div>
         </form>
       </div>
-
-      {/* Modal de Nueva Marca */}
-      {mostrarModalNuevaMarca && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Agregar Nueva Marca
-                </h3>
-                <button
-                  onClick={cerrarModalNuevaMarca}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  type="button"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Formulario */}
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="nombreMarca" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre de la Marca *
-                  </label>
-                  <input
-                    type="text"
-                    id="nombreMarca"
-                    value={nuevaMarca}
-                    onChange={(e) => setNuevaMarca(e.target.value)}
-                    placeholder="Ej: Terpel, Esso, Mobil"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900 bg-white"
-                    autoFocus
-                  />
-                </div>
-
-                <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
-                  <p className="text-xs text-gray-600">
-                    Una vez creada la marca, podrás agregar estaciones de servicio asociadas a ella.
-                  </p>
-                </div>
-              </div>
-
-              {/* Botones */}
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={cerrarModalNuevaMarca}
-                  type="button"
-                  disabled={guardandoMarca}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={guardarNuevaMarca}
-                  type="button"
-                  disabled={guardandoMarca || !nuevaMarca.trim()}
-                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {guardandoMarca ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal de Nueva Estación */}
       {mostrarModalNuevaEstacion && (

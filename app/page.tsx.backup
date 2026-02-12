@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import type { Vehiculo, RegistroCalculado } from '@/lib/supabase'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 type Metricas = {
   kmTotales: number
@@ -446,13 +446,13 @@ export default function Home() {
       {/* Gráficos */}
       {datosRendimiento.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Gráfico de Kilometraje Recorrido */}
+          {/* Gráfico de Rendimiento */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Kilometraje Recorrido
+              Tendencia de Rendimiento
             </h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={datosRendimiento}>
+              <LineChart data={datosRendimiento}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="fecha" 
@@ -462,7 +462,7 @@ export default function Home() {
                 <YAxis 
                   tick={{ fill: '#6b7280', fontSize: 12 }}
                   stroke="#9ca3af"
-                  label={{ value: 'km', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                  label={{ value: 'km/gal', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -471,14 +471,17 @@ export default function Home() {
                     borderRadius: '0.375rem',
                     fontSize: '14px'
                   }}
-                  formatter={(value: number) => [`${value} km`, 'Kilometraje']}
+                  formatter={(value: number) => [`${value} km/gal`, 'Rendimiento']}
                 />
-                <Bar 
-                  dataKey="kmRecorridos" 
-                  fill="#374151"
-                  radius={[4, 4, 0, 0]}
+                <Line 
+                  type="monotone" 
+                  dataKey="rendimiento" 
+                  stroke="#374151" 
+                  strokeWidth={2}
+                  dot={{ fill: '#374151', r: 4 }}
+                  activeDot={{ r: 6 }}
                 />
-              </BarChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
 
@@ -520,14 +523,20 @@ export default function Home() {
         </div>
       )}
 
-      {/* Gráfico de Rendimiento */}
+      {/* Gráfico de Kilometraje Recorrido */}
       {datosRendimiento.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Tendencia de Rendimiento
+            Kilometraje Recorrido
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={datosRendimiento}>
+            <AreaChart data={datosRendimiento}>
+              <defs>
+                <linearGradient id="colorKm" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#374151" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#374151" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis 
                 dataKey="fecha" 
@@ -537,7 +546,7 @@ export default function Home() {
               <YAxis 
                 tick={{ fill: '#6b7280', fontSize: 12 }}
                 stroke="#9ca3af"
-                label={{ value: 'km/gal', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                label={{ value: 'km', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -546,17 +555,17 @@ export default function Home() {
                   borderRadius: '0.375rem',
                   fontSize: '14px'
                 }}
-                formatter={(value: number) => [`${value} km/gal`, 'Rendimiento']}
+                formatter={(value: number) => [`${value} km`, 'Kilometraje']}
               />
-              <Line 
+              <Area 
                 type="monotone" 
-                dataKey="rendimiento" 
+                dataKey="kmRecorridos" 
                 stroke="#374151" 
                 strokeWidth={2}
-                dot={{ fill: '#374151', r: 4 }}
-                activeDot={{ r: 6 }}
+                fillOpacity={1}
+                fill="url(#colorKm)"
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       )}

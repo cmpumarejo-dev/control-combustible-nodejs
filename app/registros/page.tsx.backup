@@ -532,13 +532,13 @@ function RegistrosPageContent() {
             <div>
               <div className="text-sm text-gray-600">KM Recorridos</div>
               <div className="text-2xl font-bold text-gray-900">
-                {formatearNumero(estadisticas.totalKmRecorridos, 0)} <span className="text-lg text-gray-600">km</span>
+                {formatearNumero(estadisticas.totalKmRecorridos, 0)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-600">Promedio</div>
+              <div className="text-sm text-gray-600">Promedio km/gal</div>
               <div className="text-2xl font-bold text-gray-900">
-                {formatearNumero(estadisticas.promedioKmGalon)} <span className="text-lg text-gray-600">km/gal</span>
+                {formatearNumero(estadisticas.promedioKmGalon)}
               </div>
             </div>
             <div>
@@ -550,13 +550,13 @@ function RegistrosPageContent() {
             <div>
               <div className="text-sm text-gray-600">Mejor carga</div>
               <div className="text-2xl font-bold text-gray-900">
-                {formatearNumero(estadisticas.mejorRendimiento)} <span className="text-lg text-gray-600">km/gal</span>
+                {formatearNumero(estadisticas.mejorRendimiento)}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-600">Peor carga</div>
               <div className="text-2xl font-bold text-gray-900">
-                {formatearNumero(estadisticas.peorRendimiento)} <span className="text-lg text-gray-600">km/gal</span>
+                {formatearNumero(estadisticas.peorRendimiento)}
               </div>
             </div>
             <div>
