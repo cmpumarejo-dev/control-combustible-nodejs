@@ -471,7 +471,7 @@ export default function Home() {
                     borderRadius: '0.375rem',
                     fontSize: '14px'
                   }}
-                  formatter={(value: number) => [`${value} km`, 'Kilometraje']}
+                  formatter={(value) => [`${value ?? 0} km`, 'Kilometraje']}
                 />
                 <Bar 
                   dataKey="kmRecorridos" 
@@ -507,7 +507,7 @@ export default function Home() {
                     borderRadius: '0.375rem',
                     fontSize: '14px'
                   }}
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'Gasto']}
+                  formatter={(value) => [`$${(value ?? 0).toLocaleString()}`, 'Gasto']}
                 />
                 <Bar 
                   dataKey="gasto" 
@@ -546,7 +546,7 @@ export default function Home() {
                   borderRadius: '0.375rem',
                   fontSize: '14px'
                 }}
-                formatter={(value: number) => [`${value} km/gal`, 'Rendimiento']}
+                formatter={(value) => [`${value ?? 0} km/gal`, 'Rendimiento']}
               />
               <Line 
                 type="monotone" 
